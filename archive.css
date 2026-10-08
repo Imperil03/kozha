@@ -1,0 +1,25 @@
+/* Archive content uses the original report's typography and components. */
+.source-text{white-space:pre-wrap;overflow-wrap:anywhere}
+.source-text a{overflow-wrap:anywhere}
+.archive-source{font-size:var(--meta-size)!important;color:var(--muted);margin:20px 0}
+.archive-image{margin:24px 0 36px;max-width:100%}
+.archive-image img{display:block;max-width:100%;height:auto;border-radius:8px}
+.archive-notes{font-size:var(--intro-size);line-height:1.85;margin-bottom:28px}
+.archive-notes:empty{display:none}
+.archive-notes p+p{margin-top:18px}
+.archive-positions .rank-col{width:auto}
+.work-notes{padding:30px 36px;margin-top:28px;font-size:var(--small-size);line-height:1.8}
+.work-notes p+p{margin-top:16px}
+.pending-last-check{margin-top:18px}
+.engine-kpi-metric .kpi-values{flex-wrap:wrap;row-gap:14px}
+.detail-dialog .source-text{font-size:inherit}
+@media(max-width:600px){
+  .tabs{grid-template-columns:1fr 1fr}
+  .archive-positions .query-col{width:40%}
+  .archive-positions .rank-col{width:auto}
+  .engine-kpi-metrics{gap:14px}
+  .engine-kpi-metric+.engine-kpi-metric{padding-left:14px}
+  .engine-kpi-metric .kpi-values .number{font-size:36px}
+  .engine-kpi-metric .kpi-values .number.before{font-size:25px}
+}
+@media(max-width:375px){.engine-kpi-card{padding-left:18px;padding-right:18px}.engine-kpi-metric .kpi-values .number{font-size:32px}}

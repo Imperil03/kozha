@@ -1,0 +1,21 @@
+{
+  "files": {
+    "index.html": "74c98ba649adbff165f99451d5c50023f322c90c5280b605edc6960576d0ff1b",
+    "styles.css": "631f88daee0bd2bc54047003d8930cb554ab8551ec251c1a02b93bb1f3107122",
+    "results.css": "2985867da92bbcf980e61216f47dcbd6a976b6a2af73ee4e07c80beb47a360ab",
+    "archive.css": "9856907e4bdd57ba425ea21bbcecf0635feb478dab5951189ba320bf34478fe8",
+    "model.js": "e1cc10b41baa9801b632d6b2ddf723b9d26ee8e3e46100023b81e693d4bc132e",
+    "app.js": "92f4f6d980e8221af4fbb82add43947795293c1d9438ab7fab3eb2419a0e901f",
+    "assets/fonts/Montserrat-Regular.woff2": "133eee529400866a00fdd329c3b253d6c4a4e8c87c40ab502394e4f8cbd4789f",
+    "assets/fonts/Montserrat-Medium.woff2": "535beca8eb5df516ef813a1b8b716925345dd079b7aa10bc83f8794d65e1e7f3",
+    "assets/fonts/Montserrat-SemiBold.woff2": "defb5292312d3eb578c0eea6f795f3f0f79fa76d67a5c4a774c1d8e5517a49b2",
+    "assets/fonts/Montserrat-Bold.woff2": "2ab7f527839a494371c21c87e053555d13096525442be4ac6897178aab40b5b4",
+    "evidence/archive-1df3ed36e8aa65bb.png": "1df3ed36e8aa65bbe698083b6e01303f9d926a1c83c9ac71a7ac7a107eb759c1",
+    "evidence/archive-086680fbb260e69b.png": "086680fbb260e69b0af155c94d143db136119d92253da775b381db6be2573eb6",
+    "evidence/archive-c02db53e2aa41984.png": "c02db53e2aa41984f37e68ccf8e8839fb835944095e82cb06492528826082b14",
+    "evidence/archive-37bf303c3cdc2d70.png": "37bf303c3cdc2d706454ef6edf55d2f33cc1a1e1e9e756ce2edf2f30f3879e9a",
+    "evidence/archive-1dab6c4d2e1cca43.png": "1dab6c4d2e1cca4365c7a2bea8e5b1697a588753784760c019e4fd69d231767e",
+    "report-data.js": "6a4505b60e1fb41c9d87e7a2a9fd1440162826f1ffed969addbe94b5606da8cf",
+    ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
