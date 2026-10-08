@@ -18,12 +18,55 @@
   }
   const getReport = (data, month) => data.reports.find(r=>r.month===month) || null;
   const defaultMonth = data => getReport(data,data.project.defaultMonth) ? data.project.defaultMonth : data.reports.at(-1)?.month;
+  const workDetailsEnabled = report => !!report && report.month >= '2026-10';
   function readRoute(data, href) {
     const url = new URL(href);
     const month = getReport(data,url.searchParams.get('month')) ? url.searchParams.get('month') : defaultMonth(data);
     const tab = url.hash === '#works' ? 'works' : 'results';
     const detail = url.searchParams.get('task');
-    return {month,tab,detail:tab==='works'&&getReport(data,month)?.works.some(w=>w.id===detail) ? detail : null};
+    return {month,tab,detail:tab==='works'&&workDetailsEnabled(getReport(data,month))&&getReport(data,month)?.works.some(w=>w.id===detail) ? detail : null};
+  }
+  function sliceCell(cell,start,end=cell.text.length){
+    const result={...cell,text:cell.text.slice(start,end)};
+    if(cell.runs){
+      let offset=0;
+      result.runs=cell.runs.flatMap(run=>{
+        const from=Math.max(start-offset,0),to=Math.min(end-offset,run.text.length);
+        offset+=run.text.length;
+        return to>from?[{...run,text:run.text.slice(from,to)}]:[];
+      });
+    }
+    return result;
+  }
+  function proseBlocks(cells){
+    const result=[];
+    let list=null;
+    for(let cell of cells){
+      if(typeof cell==='string')cell={text:cell};
+      if(!cell?.text?.trim()){list=null;continue;}
+      const lines=[...cell.text.matchAll(/[^\r\n]+|\r\n|\r|\n/g)];
+      if(!/^[\t ]*(?:[-–—•*][\t ]+|\d+[.)][\t ]+)/m.test(cell.text)){
+        result.push({type:'p',cell});list=null;continue;
+      }
+      let paragraphStart=null,paragraphEnd=null,newlines=0;
+      const flush=()=>{if(paragraphStart!==null){result.push({type:'p',cell:sliceCell(cell,paragraphStart,paragraphEnd)});paragraphStart=null;list=null;}};
+      for(const line of lines){
+        if(/^[\r\n]+$/.test(line[0])){newlines++;if(newlines>1){flush();list=null;}continue;}
+        const marker=line[0].match(/^[\t ]*(?:([-–—•*])[\t ]+|(\d+)[.)][\t ]+)/);
+        if(marker){
+          flush();
+          const type=marker[1]?'ul':'ol',start=marker[2]?Number(marker[2]):null;
+          if(!list||list.type!==type){list={type,items:[],...(type==='ol'?{start}:{})};result.push(list);}
+          list.items.push({cell:sliceCell(cell,line.index+marker[0].length,line.index+line[0].length),...(type==='ol'?{value:start}:{})});
+        }else{
+          if(paragraphStart===null)paragraphStart=line.index;
+          paragraphEnd=line.index+line[0].length;
+        }
+        newlines=0;
+      }
+      flush();
+    }
+    return result;
   }
   function change(before, after, comparable = true) {
     if (!comparable || before === undefined || after === undefined) return {kind:'no_data'};
@@ -115,5 +158,5 @@
     if(!months.has(data.project.defaultMonth)) throw Error('Нет текущего месяца.');
     return true;
   }
-  return {ENGINES,validMonth,monthLabel,safeHref,getReport,defaultMonth,readRoute,change,rankingsView,archiveRows,filterRows,validateData,comparableSnapshots};
+  return {ENGINES,validMonth,monthLabel,safeHref,getReport,defaultMonth,readRoute,workDetailsEnabled,sliceCell,proseBlocks,change,rankingsView,archiveRows,filterRows,validateData,comparableSnapshots};
 });

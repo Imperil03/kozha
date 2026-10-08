@@ -34,17 +34,24 @@
     return url?`<figure class="archive-image"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" width="${esc(img.width)}" height="${esc(img.height)}" alt="${esc(img.alt)}" loading="lazy"></a></figure>`:'';
   }
   function blocksHTML(blocks,images=[]){
-    const items=[...blocks.map(b=>({row:b.row,html:b.cells.map(c=>`<p>${cellHTML(c)}</p>`).join('')})),...images.map(i=>({row:i.row,html:imageHTML(i)}))].sort((a,b)=>a.row-b.row);
-    return items.map(i=>i.html).join('');
+    const items=[...blocks.map(b=>({row:b.row,cells:b.cells})),...images.map(i=>({row:i.row,image:i}))].sort((a,b)=>a.row-b.row);
+    let cells=[],html='';
+    for(const item of items){
+      if(item.image){html+=proseHTML(cells)+imageHTML(item.image);cells=[];}
+      else cells.push(...item.cells);
+    }
+    return html+proseHTML(cells);
   }
-  const sourceHTML=(report,url=report.source?.url)=>report.kind==='archive'?`<p class="source-label archive-source">Источник: <a href="${esc(M.safeHref(url))}" target="_blank" rel="noopener noreferrer">Google-таблица</a></p>`:'';
+  function proseHTML(cells){
+    return `<div class="report-prose">${M.proseBlocks(cells).map(block=>block.type==='p'?`<p>${cellHTML(block.cell)}</p>`:`<${block.type}${block.type==='ol'?` start="${esc(block.start)}"`:''}>${block.items.map(item=>`<li${block.type==='ol'?` value="${esc(item.value)}"`:''}>${cellHTML(item.cell)}</li>`).join('')}</${block.type}>`).join('')}</div>`;
+  }
   let report=null,view=null,rows=[],renderedMonth=null,lastOpener=null,currentDetail=null;
   const dialog=$('detail-dialog');
   function pendingHTML(kind){
     const label=M.monthLabel(state.month).toLowerCase();
     const results=kind==='results';
     const previous=data.reports.filter(r=>r.month<state.month&&(r.kind==='archive'||r.rankings?.after)).at(-1);
-    return `<div class="empty-state surface"><div class="empty-symbol">${icon(results?'chart':'work')}</div><div><h2>${results?'Результаты':'Работы'} за ${esc(label)} ещё не добавлены</h2><p>${results?'Здесь появятся позиции сайта и сравнение с предыдущим месяцем.':'Здесь появятся выполненные работы, пояснения и ссылки на результат.'}</p>${results&&report.latestCheck?`<p class="pending-last-check">Последняя проверка позиций: ${date(report.latestCheck)}.</p>`:''}${results&&previous?`<button class="button-primary" type="button" data-month="${previous.month}">Открыть ${M.monthLabel(previous.month,false).toLowerCase()}${icon('arrow')}</button>`:''}</div></div>`;
+    return `<div class="empty-state surface"><div class="empty-symbol">${icon(results?'chart':'work')}</div><div><h2>${results?'Результаты':'Работы'} за ${esc(label)} ещё не добавлены</h2>${results&&report.latestCheck?`<p class="pending-last-check">Последняя проверка позиций: ${date(report.latestCheck)}.</p>`:''}${results&&previous?`<button class="button-primary" type="button" data-month="${previous.month}">Открыть ${M.monthLabel(previous.month,false).toLowerCase()}${icon('arrow')}</button>`:''}</div></div>`;
   }
   function archiveMetricHTML(metric){
     const part=c=>{const cut=c.text.indexOf(':');return {prefix:cut>=0?c.text.slice(0,cut):'',value:cut>=0?c.text.slice(cut+1).trim():c.text};};
@@ -103,19 +110,21 @@
     if(report.kind==='archive'){
       view=null;rows=M.archiveRows(report);
       const split=report.intro.at(-1)?.row||0;
-      return `<div class="results-heading"><h2>${cellHTML(report.title)}</h2>${sourceHTML(report)}${blocksHTML(report.intro,report.images.filter(i=>i.row<=split+1))}</div>${kpisHTML()}${chartsHTML()}<div class="archive-notes">${blocksHTML(report.afterMetrics,report.images.filter(i=>i.row>split+1&&i.row<report.positionsStartRow))}</div>${tableHTML()}${report.images.filter(i=>i.row>report.positionsStartRow).map(imageHTML).join('')}`;
+      return `<div class="results-heading"><h2>${cellHTML(report.title)}</h2>${blocksHTML(report.intro,report.images.filter(i=>i.row<=split+1))}</div>${kpisHTML()}${chartsHTML()}<div class="archive-notes">${blocksHTML(report.afterMetrics,report.images.filter(i=>i.row>split+1&&i.row<report.positionsStartRow))}</div>${tableHTML()}${report.images.filter(i=>i.row>report.positionsStartRow).map(imageHTML).join('')}`;
     }
     view=M.rankingsView(report.rankings);rows=view?.rows||[];
     if(!view)return pendingHTML('results');
-    return `<div class="results-heading"><h2>Результаты за ${M.monthLabel(state.month).toLowerCase()}</h2><p class="source-label">Топвизор · ${esc(view.after.region)} · ${esc(view.after.device)} · ${date(view.after.date)}</p>${report.intro.map(c=>`<p>${cellHTML(c)}</p>`).join('')}</div>${kpisHTML()}${view.before&&!view.comparable?'<p class="metrics-note">Настройки замеров различаются. Изменения позиций не сравниваем.</p>':''}${view.before&&view.comparable?chartsHTML():''}${tableHTML()}`;
+    return `<div class="results-heading"><h2>Результаты за ${M.monthLabel(state.month).toLowerCase()}</h2><p class="source-label">Топвизор · ${esc(view.after.region)} · ${esc(view.after.device)} · ${date(view.after.date)}</p>${proseHTML(report.intro)}</div>${kpisHTML()}${view.before&&!view.comparable?'<p class="metrics-note">Настройки замеров различаются. Изменения позиций не сравниваем.</p>':''}${view.before&&view.comparable?chartsHTML():''}${tableHTML()}`;
   }
   function worksHTML(){
     if(!report.works.length)return pendingHTML('works');
-    const notes=report.workNotes?.length?`<section class="surface work-notes">${report.workNotes.map(c=>`<p>${cellHTML(c)}</p>`).join('')}</section>`:'';
-    return `<div class="works-heading"><h2>${report.worksTitle?cellHTML(report.worksTitle):'Работы за '+M.monthLabel(state.month).toLowerCase()}</h2><p>Что изменили, зачем и где посмотреть результат.</p></div><section class="surface"><table class="works-table"><thead><tr><th scope="col">Что сделали</th><th scope="col">Краткое описание</th><th scope="col">Для чего это нужно</th><th scope="col">Подробнее</th></tr></thead><tbody>${report.works.map(w=>`<tr><td><h3 class="work-name">${cellHTML(w.title)}</h3></td><td class="work-summary">${cellHTML(w.description)}</td><td data-label="Для чего это нужно">${cellHTML(w.why)}</td><td><button type="button" class="work-open" data-task="${esc(w.id)}" aria-label="Подробнее: ${esc(w.title.text)}">Подробнее${icon('arrow')}</button></td></tr>`).join('')}</tbody></table></section>${notes}${sourceHTML(report,report.worksSource)}`;
+    const details=M.workDetailsEnabled(report);
+    const notes=report.workNotes?.length?`<section class="surface work-notes">${proseHTML(report.workNotes)}</section>`:'';
+    const attachment=w=>!details&&w.attachment?.text&&w.attachment.text!=='—'?`<p class="work-attachment">${/^https:\/\/docs\.google\.com\/spreadsheets\//.test(w.attachment.text)?`<a href="${esc(M.safeHref(w.attachment.text))}" target="_blank" rel="noopener noreferrer">Таблица связанных процедур</a>`:cellHTML(w.attachment)}</p>`:'';
+    return `<div class="works-heading"><h2>${report.worksTitle?cellHTML(report.worksTitle):'Работы за '+M.monthLabel(state.month).toLowerCase()}</h2></div><section class="surface"><table class="works-table ${details?'':'archive-works'}"><thead><tr><th scope="col">Что сделали</th><th scope="col">Краткое описание</th><th scope="col">Для чего это нужно</th>${details?'<th scope="col">Подробнее</th>':''}</tr></thead><tbody>${report.works.map(w=>`<tr><td><h3 class="work-name">${cellHTML(w.title)}</h3></td><td class="work-summary">${proseHTML([w.description])}${attachment(w)}</td><td data-label="Для чего это нужно">${proseHTML([w.why])}</td>${details?`<td><button type="button" class="work-open" data-task="${esc(w.id)}" aria-label="Подробнее: ${esc(w.title.text)}">Подробнее${icon('arrow')}</button></td>`:''}</tr>`).join('')}</tbody></table></section>${notes}`;
   }
   function renderDetail(){
-    const work=state.tab==='works'?report.works.find(w=>w.id===state.detail):null;
+    const work=state.tab==='works'&&M.workDetailsEnabled(report)?report.works.find(w=>w.id===state.detail):null;
     if(!work){
       if(dialog.open){dialog.close();document.body.classList.remove('dialog-open');if(lastOpener?.isConnected)lastOpener.focus({preventScroll:true});else $('tab-'+state.tab).focus({preventScroll:true});}
       currentDetail=null;return;
@@ -123,7 +132,7 @@
     if(currentDetail===work.id&&dialog.open)return;
     dialog.dataset.reportView='works';
     $('detail-title').textContent=work.title.text;$('detail-meta').hidden=true;
-    $('detail-body').innerHTML=`<div class="actual-result">${[['Что сделали',work.description],['Для чего это нужно',work.why],['Скриншот',work.attachment]].filter(([,c])=>c.text).map(([h,c])=>`<section class="detail-section"><h3>${h}</h3><p>${cellHTML(c)}</p></section>`).join('')}${(work.evidence||[]).map(imageHTML).join('')}</div>`;
+    $('detail-body').innerHTML=`<div class="actual-result">${[['Что сделали',work.description],['Для чего это нужно',work.why],['Материалы',work.attachment]].filter(([,c])=>c.text).map(([h,c])=>`<section class="detail-section"><h3>${h}</h3>${proseHTML([c])}</section>`).join('')}${(work.evidence||[]).map(imageHTML).join('')}</div>`;
     if(!dialog.open){dialog.showModal();document.body.classList.add('dialog-open');}
     $('detail-body').scrollTop=0;$('close-detail').focus({preventScroll:true});currentDetail=work.id;
   }

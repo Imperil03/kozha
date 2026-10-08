@@ -1,7 +1,23 @@
 /* Archive content uses the original report's typography and components. */
 .source-text{white-space:pre-wrap;overflow-wrap:anywhere}
 .source-text a{overflow-wrap:anywhere}
-.archive-source{font-size:var(--meta-size)!important;color:var(--muted);margin:20px 0}
+.report-prose{font-size:inherit;line-height:inherit}
+.report-prose>p{margin:0 0 14px}
+.report-prose>p:last-child{margin-bottom:0}
+.report-prose ul,.report-prose ol{padding-inline-start:1.4em;margin:12px 0 22px;list-style-position:outside}
+.report-prose ul{list-style-type:disc}
+.report-prose ol{list-style-type:decimal}
+.report-prose li{padding-inline-start:.25em;margin:6px 0}
+.report-prose li::marker{color:var(--accent);font-weight:600}
+.results-heading>.report-prose{font-size:var(--intro-size);line-height:1.85;max-width:75ch;margin-top:24px}
+.results-heading .report-prose p{font-size:inherit;line-height:inherit;margin:0 0 18px}
+.works-table .report-prose{font-size:inherit;line-height:inherit}
+.works-table .report-prose ul,.works-table .report-prose ol{margin:10px 0 14px}
+.works-table.archive-works th:first-child{width:25%}
+.works-table.archive-works th:nth-child(2){width:43%}
+.works-table.archive-works th:last-child{width:32%}
+.work-attachment{font-size:14px;line-height:1.6;margin-top:16px}
+.detail-dialog .report-prose{font-size:15px;line-height:1.8}
 .archive-image{margin:24px 0 36px;max-width:100%}
 .archive-image img{display:block;max-width:100%;height:auto;border-radius:8px}
 .archive-notes{font-size:var(--intro-size);line-height:1.85;margin-bottom:28px}
@@ -13,6 +29,7 @@
 .pending-last-check{margin-top:18px}
 .engine-kpi-metric .kpi-values{flex-wrap:wrap;row-gap:14px}
 .detail-dialog .source-text{font-size:inherit}
+@media(max-width:1100px){.works-table.archive-works tr{grid-template-columns:1fr}}
 @media(max-width:600px){
   .tabs{grid-template-columns:1fr 1fr}
   .archive-positions .query-col{width:40%}
