@@ -92,7 +92,7 @@
     const headers=Object.fromEntries(engines.map(e=>[e,archive?[...report.positions.headers[e],'Изменение']:view.before?[date(view.before.date),date(view.after.date),'Изменение']:[date(view.after.date)]]));
     const directions=[...new Set(rows.map(r=>r.direction).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
     const currentIndex=e=>archive?headers[e].length-2:view.before?1:0;
-    const columns=engines.map(e=>headers[e].map((h,i)=>`<th scope="col" id="rank-${e}-${i}" class="engine-${e} period-heading ${i===0?'engine-start':''} ${i===currentIndex(e)?'current':''}">${h==='Изменение'?'<span class="rank-change-label" aria-hidden="true">Изменение</span><span class="rank-change-short" aria-hidden="true">Изм.</span><span class="sr-only">Изменение</span>':dateHTML(h)}</th>`).join('')).join('');
+    const columns=engines.map(e=>headers[e].map((h,i)=>`<th scope="col" id="rank-${e}-${i}" class="engine-${e} period-heading ${i===0?'engine-start':''} ${i===currentIndex(e)-1?'period-before':''} ${i===currentIndex(e)?'current':''}">${h==='Изменение'?'<span class="rank-change-label" aria-hidden="true">Изменение</span><span class="rank-change-short" aria-hidden="true">Изм.</span><span class="sr-only">Изменение</span>':dateHTML(h)}</th>`).join('')).join('');
     const dirs=`<div class="filter-field"><label for="direction-filter">Направление</label><div class="select-wrap"><select id="direction-filter"><option value="">Все направления</option>${directions.map(d=>`<option value="${esc(d)}" ${d===state.filters.direction?'selected':''}>${esc(d)}</option>`).join('')}${rows.some(r=>!r.direction)?'<option value="__unmapped">Группа не найдена</option>':''}</select>${icon('chevron')}</div></div>`;
     const trends=`<div class="filter-field"><label for="trend-filter">Динамика в любом поисковике</label><div class="select-wrap"><select id="trend-filter">${[['all','Все изменения'],['up','Рост'],['down','Снижение'],['same','Без изменений'],['new','Новые запросы']].map(([v,l])=>`<option value="${v}" ${v===state.filters.trend?'selected':''}>${l}</option>`).join('')}</select>${icon('chevron')}</div></div>`;
     const legend=`<div class="rank-legend" aria-label="Цвет позиций в поиске"><span class="legend-title">Позиции:</span><span><i class="legend-swatch rank-top3" aria-hidden="true"></i>1–3</span><span><i class="legend-swatch rank-top10" aria-hidden="true"></i>4–10</span><span><i class="legend-swatch rank-other" aria-hidden="true"></i>11+</span></div>`;
@@ -118,7 +118,7 @@
       const cells=engines.map(e=>{
         const values=archive?[...r[e],r.changes[e].change]:view.before?[r[e].before,r[e].after,r[e].change]:[r[e].after];
         const currentIndex=archive?values.length-2:view.before?1:0;
-        return values.map((v,i)=>`<td headers="${esc(qid)} engine-${e} rank-${e}-${i}" class="engine-${e} ${i===0?'engine-start':''} ${i===currentIndex?'current':''}">${archive&&i===values.length-1||!archive&&i===2?deltaHTML(v):archive?rankHTML(v.text,v):rankHTML(v)}</td>`).join('');
+        return values.map((v,i)=>`<td headers="${esc(qid)} engine-${e} rank-${e}-${i}" class="engine-${e} ${i===0?'engine-start':''} ${i===currentIndex-1?'period-before':''} ${i===currentIndex?'current':''}">${archive&&i===values.length-1||!archive&&i===2?deltaHTML(v):archive?rankHTML(v.text,v):rankHTML(v)}</td>`).join('');
       }).join('');
       return `<tr>${query}${cells}</tr>`;
     }).join('');

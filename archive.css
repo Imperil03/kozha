@@ -44,6 +44,7 @@
 /* Positions: grouped search engines, explicit rank bands and readable dates. */
 .queries-card{
   --rank-line:#dce1ea;
+  --rank-group-bg:#e9e6f8;--rank-history-bg:#f4f5f8;--rank-current-bg:#eaf4f2;--rank-current-heading:#d9ebe7;--rank-current-ink:#185e59;
   --rank-top3-ink:#175637;--rank-top3-fill:#e0f1e6;--rank-top3-line:#b7d5c1;
   --rank-top10-ink:#344584;--rank-top10-fill:#e9edf9;--rank-top10-line:#ced6ee;
   --rank-muted:#5c6677;--rank-head-height:48px;
@@ -78,9 +79,9 @@
 .queries-card .positions-table .engine-google{background:white}
 .queries-card .positions-table thead .engine-yandex{background:#f3f5f8;color:var(--ink)}
 .queries-card .positions-table thead .engine-google{background:#f3f5f8;color:var(--ink)}
-.queries-card .positions-table tbody .engine-yandex.current{background:white}
-.queries-card .positions-table tbody .engine-google.current{background:white}
-.queries-card .positions-table thead .current{background:#e9edf3;font-weight:700;box-shadow:inset 0 -2px currentColor}
+.queries-card .positions-table tbody .engine-yandex.current{background:var(--rank-current-bg)}
+.queries-card .positions-table tbody .engine-google.current{background:var(--rank-current-bg)}
+.queries-card .positions-table thead .current{background:var(--rank-current-heading);color:var(--rank-current-ink);font-weight:700;box-shadow:none}
 .queries-card .positions-table .engine-google.engine-start{border-left:2px solid #bac2d0}
 .rank-date{display:inline-flex;flex-direction:column;gap:3px;font-size:14px;line-height:1.25;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rank-date small{font-size:11px;line-height:1.25;font-weight:400}
@@ -169,3 +170,9 @@
 @media(min-width:601px) and (max-width:1023px){
   .queries-card .positions-table .period-heading{padding-left:5px;padding-right:5px}
 }
+
+/* Column backgrounds copied from the approved Molekula report reference. */
+.queries-card .positions-table thead th.engine-title{background:var(--rank-group-bg);color:var(--ink)}
+.queries-card .positions-table td.period-before,.queries-card .positions-table th.period-before{background:var(--rank-history-bg)}
+.queries-card .positions-table tbody tr:hover .period-before{background:#ebeef4}
+.queries-card .positions-table tbody tr:hover .current{background:#dfeeea}
