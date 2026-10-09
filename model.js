@@ -89,7 +89,7 @@
     const all=[...after.rows, ...(before?.rows||[]).filter(r=>!current.has(r.id))];
     const rows=all.map(row=>({id:row.id,query:row.query,direction:row.direction||'',...Object.fromEntries(ENGINES.map(e=>{
       const a=previous.get(row.id)?.[e], b=current.get(row.id)?.[e];
-      return [e,{before:a,after:b,change:change(a,b,comparable)}];
+      return [e,{before:a,after:b,comparable,change:change(a,b,comparable)}];
     }))}));
     const stats=Object.fromEntries(ENGINES.map(e=>{
       const common=comparable ? rows.filter(r=>measured(r[e].before)&&measured(r[e].after)) : [];
@@ -101,16 +101,51 @@
     }));
     return {before,after,rows,stats,comparable};
   }
-  function archiveRows(report) {
-    return report.positions.rows.map(r=>({...r,direction:'',archive:true}));
+  const normalizeQuery=query=>query.normalize('NFKC').toLocaleLowerCase('ru-RU').trim().replace(/\s+/g,' ');
+  function groupIndex(groups=[]){
+    const index=new Map();
+    for(const row of groups){
+      const key=normalizeQuery(row.query);
+      if(index.has(key)&&index.get(key)!==row.direction)index.set(key,'');
+      else if(!index.has(key))index.set(key,row.direction);
+    }
+    return index;
+  }
+  function archiveValue(cell){
+    const text=cell?.text?.trim();
+    return /^[1-9]\d*$/.test(text||'')?Number(text):undefined;
+  }
+  function archiveDate(label){
+    const m=typeof label==='string'&&label.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if(!m)return null;
+    const date=new Date(Date.UTC(Number(m[3]),Number(m[2])-1,Number(m[1])));
+    return date.getUTCFullYear()===Number(m[3])&&date.getUTCMonth()===Number(m[2])-1&&date.getUTCDate()===Number(m[1])?date.valueOf():null;
+  }
+  function rankBand(value){
+    if(typeof value==='string')value=/^[1-9]\d*$/.test(value.trim())?Number(value.trim()):undefined;
+    if(!Number.isInteger(value)||value<1)return 'missing';
+    return value<=3?'top3':value<=10?'top10':'other';
+  }
+  function archiveRows(report,groups=[]) {
+    const index=groupIndex(groups);
+    return report.positions.rows.map(r=>{
+      const direction=index.get(normalizeQuery(r.query))||index.get(normalizeQuery(r.googleQueryCell?.text||r.query))||'';
+      const changes=Object.fromEntries(ENGINES.map(e=>{
+        const before=archiveValue(r[e].at(-2)),after=archiveValue(r[e].at(-1));
+        const first=archiveDate(report.positions.headers?.[e]?.at(-2)),last=archiveDate(report.positions.headers?.[e]?.at(-1));
+        const comparable=first!==null&&last!==null&&first<last;
+        return [e,{before,after,comparable,change:change(before,after,comparable)}];
+      }));
+      return {...r,direction,changes,archive:true};
+    });
   }
   function filterRows(rows,{search='',direction='',trend='all'}={}) {
     const q=search.toLocaleLowerCase('ru-RU').trim();
     return rows.filter(r=> (!q || [r.query,r.googleQueryCell?.text].filter(Boolean).some(s=>s.toLocaleLowerCase('ru-RU').includes(q))) &&
-      (!direction || r.direction===direction) && (trend==='all' || ENGINES.some(e=>{
-        if(r.archive) return true;
-        const c=r[e].change.kind;
-        return trend==='up'?['up','appeared'].includes(c):trend==='down'?['down','lost'].includes(c):trend==='new'?r[e].before===undefined&&measured(r[e].after):c==='same';
+      (!direction || (direction==='__unmapped'?!r.direction:r.direction===direction)) && (trend==='all' || ENGINES.some(e=>{
+        const values=r.archive?r.changes[e]:r[e];
+        const c=values.change.kind;
+        return trend==='up'?['up','appeared'].includes(c):trend==='down'?['down','lost'].includes(c):trend==='new'?values.comparable!==false&&values.before===undefined&&measured(values.after):c==='same';
       })));
   }
   function validateCell(c) {
@@ -123,6 +158,10 @@
   function validateData(data) {
     if(data?.project?.id!=='kozha'||data.project.website!=='https://kozhaclinic.ru/') throw Error('Чужой проект.');
     if(!Array.isArray(data.reports)||!data.reports.length) throw Error('Нет отчётов.');
+    if(data.keywordGroups){
+      if(!Array.isArray(data.keywordGroups)&&data.keywordGroups.projectId!==25767208)throw Error('Группы относятся к другому проекту.');
+      for(const group of (Array.isArray(data.keywordGroups)?data.keywordGroups:data.keywordGroups.rows||[])){if(typeof group.query!=='string'||typeof group.direction!=='string')throw Error('Некорректная группа запросов.');}
+    }
     const months=new Set();
     for(const report of data.reports) {
       if(report.projectId!=='kozha'||!validMonth(report.month)||months.has(report.month)) throw Error('Некорректный или повторный месяц.');
@@ -158,5 +197,5 @@
     if(!months.has(data.project.defaultMonth)) throw Error('Нет текущего месяца.');
     return true;
   }
-  return {ENGINES,validMonth,monthLabel,safeHref,getReport,defaultMonth,readRoute,workDetailsEnabled,sliceCell,proseBlocks,change,rankingsView,archiveRows,filterRows,validateData,comparableSnapshots};
+  return {ENGINES,validMonth,monthLabel,safeHref,getReport,defaultMonth,readRoute,workDetailsEnabled,sliceCell,proseBlocks,change,rankingsView,archiveRows,filterRows,validateData,comparableSnapshots,rankBand,groupIndex};
 });

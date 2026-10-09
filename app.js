@@ -83,32 +83,55 @@
       return `<section class="ranking-chart surface">${title}<div class="rank-bars">${pairs[e].map(m=>`<div class="rank-bar-group">${['before','after'].map(s=>m[s]===null?'':`<div class="rank-bar ${s}" style="height:${Math.max(0,m[s])/max*104}px"><span>${number(m[s])}${archive?'%':''}</span></div>`).join('')}<strong>Топ-${m.top}</strong></div>`).join('')}</div><div class="chart-legend">${compared?`<span><i class="before-key"></i>Было${!archive&&view.before?' · '+date(view.before.date):''}</span>`:''}<span><i></i>${compared?'Стало':'Сейчас'}${!archive?' · '+date(view.after.date):''}</span></div></section>`;
     }).join('')}</div>`;
   }
+  function dateHTML(label){
+    const parts=label.match(/^(\d{1,2}\.\d{1,2}\.)(\d{4})$/);
+    return parts?`<span class="rank-date"><span>${esc(parts[1])}</span><small>${parts[2]}</small></span>`:esc(label);
+  }
   function tableHTML(){
     const archive=report.kind==='archive';
     const headers=archive?report.positions.headers:Object.fromEntries(engines.map(e=>[e,view.before?[date(view.before.date),date(view.after.date),'Изменение']:[date(view.after.date)]]));
     const directions=[...new Set(rows.map(r=>r.direction).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
-    const columns=engines.map(e=>headers[e].map((h,i)=>`<th scope="col" class="engine-${e} ${i===headers[e].length-1?'current':''}">${esc(h)}</th>`).join('')).join('');
-    const dirs=directions.length?`<div class="filter-field"><label for="direction-filter">Направление</label><div class="select-wrap"><select id="direction-filter"><option value="">Все направления</option>${directions.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('')}</select>${icon('chevron')}</div></div>`:'';
-    const trends=!archive&&view.before?`<div class="filter-field"><label for="trend-filter">Динамика в любом поисковике</label><div class="select-wrap"><select id="trend-filter">${[['all','Все изменения'],['up','Рост'],['down','Снижение'],['same','Без изменений'],['new','Новые запросы']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select>${icon('chevron')}</div></div>`:'';
-    return `<section class="queries-card surface"><div class="section-heading"><h2>Позиции запросов</h2><p>${rows.length} запросов</p></div><div class="table-filters"><div class="filter-field search"><label for="query-search">Найти запрос</label><input id="query-search" type="search" placeholder="Например, лазерная эпиляция" value="${esc(state.filters.search)}"></div>${dirs}${trends}</div><div class="mobile-engine" role="group" aria-label="Поисковик в таблице">${engines.map(e=>`<button type="button" data-engine="${e}" aria-pressed="${state.engine===e}">${e==='yandex'?'Яндекс':'Google'}</button>`).join('')}</div><p class="table-scroll-hint">Таблицу можно листать вправо, чтобы увидеть все показатели.</p><div class="table-scroll" id="positions-wrap" data-engine="${state.engine}" role="region" tabindex="0" aria-label="Позиции запросов"><table class="positions-table ${archive?'archive-positions':''}"><caption class="sr-only">Позиции запросов за ${M.monthLabel(state.month).toLowerCase()}</caption><colgroup><col class="query-col">${engines.map(e=>headers[e].map(()=>`<col class="rank-col engine-${e}">`).join('')).join('')}</colgroup><thead><tr><th rowspan="2" scope="col" class="query-heading">Запрос</th>${engines.map(e=>`<th colspan="${headers[e].length}" scope="colgroup" class="engine-${e} engine-title">${e==='yandex'?'Яндекс':'Google'}</th>`).join('')}</tr><tr>${columns}</tr></thead><tbody id="query-rows"></tbody></table></div><p id="query-empty" class="query-empty" hidden>Запросы не найдены. Измените поиск или фильтры.</p><div class="table-footer"><span id="query-count" role="status" aria-live="polite"></span><button class="button-secondary" type="button" id="show-more">Показать ещё 25</button></div>${archive?'':'<p class="table-method">«—» - сайт не найден в результатах проверки. «Нет замера» - измерение отсутствует. Динамика рассчитана по запросам, проверенным в обоих срезах.</p>'}</section>`;
+    const currentIndex=e=>archive?headers[e].length-1:view.before?1:0;
+    const columns=engines.map(e=>headers[e].map((h,i)=>`<th scope="col" id="rank-${e}-${i}" class="engine-${e} period-heading ${i===0?'engine-start':''} ${i===currentIndex(e)?'current':''}">${h==='Изменение'?'<span class="rank-change-label" aria-hidden="true">Изм.</span><span class="sr-only">Изменение</span>':dateHTML(h)}</th>`).join('')).join('');
+    const dirs=`<div class="filter-field"><label for="direction-filter">Направление</label><div class="select-wrap"><select id="direction-filter"><option value="">Все направления</option>${directions.map(d=>`<option value="${esc(d)}" ${d===state.filters.direction?'selected':''}>${esc(d)}</option>`).join('')}${rows.some(r=>!r.direction)?'<option value="__unmapped">Группа не найдена</option>':''}</select>${icon('chevron')}</div></div>`;
+    const trends=`<div class="filter-field"><label for="trend-filter">Динамика в любом поисковике</label><div class="select-wrap"><select id="trend-filter">${[['all','Все изменения'],['up','Рост'],['down','Снижение'],['same','Без изменений'],['new','Новые запросы']].map(([v,l])=>`<option value="${v}" ${v===state.filters.trend?'selected':''}>${l}</option>`).join('')}</select>${icon('chevron')}</div></div>`;
+    const legend=`<div class="rank-legend" aria-label="Цвет позиций в поиске"><span class="legend-title">Позиции:</span><span><i class="legend-swatch rank-top3" aria-hidden="true"></i>1–3</span><span><i class="legend-swatch rank-top10" aria-hidden="true"></i>4–10</span><span><i class="legend-swatch rank-other" aria-hidden="true"></i>11+</span></div>`;
+    return `<section class="queries-card surface"><div class="section-heading"><h2>Позиции запросов</h2><p id="query-total">Запросов: ${rows.length}</p></div><div class="table-filters"><div class="filter-field search"><label for="query-search">Найти запрос</label><input id="query-search" type="search" placeholder="Например, лазерная эпиляция" value="${esc(state.filters.search)}"></div>${dirs}${trends}</div><div class="rank-tools"><div class="mobile-engine" role="group" aria-label="Поисковик в таблице">${engines.map(e=>`<button type="button" data-engine="${e}" aria-pressed="${state.engine===e}">${e==='yandex'?'Яндекс':'Google'}</button>`).join('')}</div>${legend}<button type="button" class="filter-reset" id="reset-filters" hidden>Сбросить фильтры</button></div><div class="table-scroll positions-scroll" id="positions-wrap" data-engine="${state.engine}" role="region" tabindex="0" aria-label="Позиции запросов"><table class="positions-table ${archive?'archive-positions':''}"><caption class="sr-only">Позиции запросов за ${M.monthLabel(state.month).toLowerCase()}</caption><colgroup><col class="query-col">${engines.map(e=>headers[e].map(()=>`<col class="rank-col engine-${e}">`).join('')).join('')}</colgroup><thead><tr><th rowspan="2" scope="col" class="query-heading">Запрос</th>${engines.map(e=>`<th id="engine-${e}" colspan="${headers[e].length}" scope="colgroup" class="engine-${e} engine-title engine-start">${e==='yandex'?'Яндекс':'Google'}</th>`).join('')}</tr><tr>${columns}</tr></thead><tbody id="query-rows"></tbody></table></div><p id="query-empty" class="query-empty" hidden>Запросы не найдены. Измените поиск или сбросьте фильтры.</p><div class="table-footer"><span id="query-count" role="status" aria-live="polite"></span><button class="button-secondary" type="button" id="show-more">Показать ещё 25</button></div>${archive?'':'<p class="table-method">«—» - сайт не найден в результатах проверки. «Нет замера» - измерение отсутствует. Динамика рассчитана по запросам, проверенным в обоих срезах.</p>'}</section>`;
   }
-  function rankHTML(v){return v===undefined?'<span class="neutral">Нет замера</span>':v===null?'<span class="neutral" title="Сайт не найден в результатах проверки">—</span>':number(v);}
+  function rankHTML(value,cell){
+    const band=M.rankBand(value);
+    const content=cell?cellHTML(cell):value===undefined?'<span class="rank-no-measure">Нет замера</span>':value===null?'<span title="Сайт не найден в результатах проверки">—</span>':number(value);
+    return `<span class="rank-value rank-${band}">${content}</span>`;
+  }
   function deltaHTML(c){
-    if(['up','down'].includes(c.kind))return `<span class="delta ${c.kind==='up'?'positive':'negative'}">${icon(c.kind)}${number(c.amount)}</span>`;
-    const labels={appeared:'Появился',lost:'За пределами',same:'Без изменений',no_data:'Не сравниваем'};
-    return `<span class="delta ${c.kind==='appeared'?'positive':c.kind==='lost'?'negative':'neutral'}">${labels[c.kind]}</span>`;
+    if(['up','down'].includes(c.kind))return `<span class="delta ${c.kind==='up'?'positive':'negative'}"><span aria-hidden="true">${icon(c.kind)}${number(c.amount)}</span><span class="sr-only">${c.kind==='up'?'Рост':'Снижение'} на ${c.amount}</span></span>`;
+    const labels={appeared:['Появился','Нов.'],lost:['За пределами проверки','Вне'],same:['Без изменений','0'],no_data:['Нет сопоставимых замеров','—']};
+    const [label,short]=labels[c.kind];
+    return `<span class="delta ${c.kind==='appeared'?'positive':c.kind==='lost'?'negative':'neutral'}" title="${label}"><span aria-hidden="true">${short}</span><span class="sr-only">${label}</span></span>`;
   }
-  function renderQueries(){
+  function renderQueries({resetScroll=false}={}){
     if(!$('query-rows'))return;
     const filtered=M.filterRows(rows,state.filters),visible=filtered.slice(0,state.limit),archive=report.kind==='archive';
-    $('query-rows').innerHTML=visible.map(r=>`<tr><td>${archive?cellHTML(r.queryCell):esc(r.query)}${r.googleQueryCell?`<span class="query-direction">Google: ${cellHTML(r.googleQueryCell)}</span>`:''}${r.direction?`<span class="query-direction">${esc(r.direction)}</span>`:''}</td>${engines.map(e=>archive?r[e].map((c,i)=>`<td class="engine-${e} ${i===r[e].length-1?'current':''}">${cellHTML(c)}</td>`).join(''):`${view.before?`<td class="engine-${e}">${rankHTML(r[e].before)}</td>`:''}<td class="engine-${e} current">${rankHTML(r[e].after)}</td>${view.before?`<td class="engine-${e}">${deltaHTML(r[e].change)}</td>`:''}`).join('')}</tr>`).join('');
+    $('query-rows').innerHTML=visible.map(r=>{
+      const qid='query-'+r.id;
+      const query=`<th scope="row" id="${esc(qid)}" class="query-cell">${archive?cellHTML(r.queryCell):esc(r.query)}${r.googleQueryCell?`<span class="query-direction">Google: ${cellHTML(r.googleQueryCell)}</span>`:''}${r.direction?`<span class="query-direction">${esc(r.direction)}</span>`:''}</th>`;
+      const cells=engines.map(e=>{
+        const values=archive?r[e]:view.before?[r[e].before,r[e].after,r[e].change]:[r[e].after];
+        const currentIndex=archive?values.length-1:view.before?1:0;
+        return values.map((v,i)=>`<td headers="${esc(qid)} engine-${e} rank-${e}-${i}" class="engine-${e} ${i===0?'engine-start':''} ${i===currentIndex?'current':''}">${!archive&&i===2?deltaHTML(v):archive?rankHTML(v.text,v):rankHTML(v)}</td>`).join('');
+      }).join('');
+      return `<tr>${query}${cells}</tr>`;
+    }).join('');
     $('positions-wrap').hidden=!filtered.length;$('query-empty').hidden=!!filtered.length;
     $('query-count').textContent=`Показано: ${visible.length} из ${filtered.length}`;
+    $('query-total').textContent=filtered.length===rows.length?`Запросов: ${rows.length}`:`Найдено: ${filtered.length} из ${rows.length}`;
     $('show-more').hidden=visible.length>=filtered.length;
+    $('reset-filters').hidden=!state.filters.search&&!state.filters.direction&&state.filters.trend==='all';
+    if(resetScroll){$('positions-wrap').scrollTop=0;$('positions-wrap').scrollLeft=0;}
   }
   function resultsHTML(){
     if(report.kind==='archive'){
-      view=null;rows=M.archiveRows(report);
+      view=null;rows=M.archiveRows(report,data.keywordGroups);
       const split=report.intro.at(-1)?.row||0;
       return `<div class="results-heading"><h2>${cellHTML(report.title)}</h2>${blocksHTML(report.intro,report.images.filter(i=>i.row<=split+1))}</div>${kpisHTML()}${chartsHTML()}<div class="archive-notes">${blocksHTML(report.afterMetrics,report.images.filter(i=>i.row>split+1&&i.row<report.positionsStartRow))}</div>${tableHTML()}${report.images.filter(i=>i.row>report.positionsStartRow).map(imageHTML).join('')}`;
     }
@@ -168,10 +191,11 @@
     const work=e.target.closest('[data-task]');if(work){lastOpener=work;navigate({detail:work.dataset.task});return;}
     const month=e.target.closest('button[data-month]');if(month){navigate({month:month.dataset.month,tab:'results',detail:null});return;}
     const engine=e.target.closest('button[data-engine]');if(engine){state.engine=engine.dataset.engine;$('positions-wrap').dataset.engine=state.engine;document.querySelectorAll('button[data-engine]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.engine===state.engine)));return;}
+    if(e.target.closest('#reset-filters')){state.filters={search:'',direction:'',trend:'all'};state.limit=25;$('query-search').value='';$('direction-filter').value='';$('trend-filter').value='all';renderQueries({resetScroll:true});$('query-search').focus({preventScroll:true});return;}
     if(e.target.closest('#show-more')){state.limit+=25;renderQueries();}
   });
-  document.addEventListener('input',e=>{if(e.target.id==='query-search'){state.filters.search=e.target.value;state.limit=25;renderQueries();}});
-  document.addEventListener('change',e=>{if(e.target.id==='direction-filter')state.filters.direction=e.target.value;else if(e.target.id==='trend-filter')state.filters.trend=e.target.value;else return;state.limit=25;renderQueries();});
+  document.addEventListener('input',e=>{if(e.target.id==='query-search'){state.filters.search=e.target.value;state.limit=25;renderQueries({resetScroll:true});}});
+  document.addEventListener('change',e=>{if(e.target.id==='direction-filter')state.filters.direction=e.target.value;else if(e.target.id==='trend-filter')state.filters.trend=e.target.value;else return;state.limit=25;renderQueries({resetScroll:true});});
   $('close-detail').addEventListener('click',()=>navigate({detail:null}));
   dialog.addEventListener('cancel',e=>{e.preventDefault();navigate({detail:null});});
   dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)navigate({detail:null});}});
