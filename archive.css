@@ -73,14 +73,14 @@
 .queries-card .positions-table thead th{position:sticky;z-index:3;border-bottom:1px solid var(--rank-line);padding:10px 7px;color:#475166;font-size:13px;line-height:1.35;vertical-align:middle}
 .queries-card .positions-table th.engine-title{top:0;height:var(--rank-head-height);padding:11px 12px;font-size:18px;line-height:24px;font-weight:600}
 .queries-card .positions-table .period-heading{top:var(--rank-head-height);height:54px}
-.queries-card .positions-table .query-heading{top:0;left:0;z-index:5;background:white;text-align:left;padding-left:18px;border-right:1px solid var(--rank-line)}
+.queries-card .positions-table .query-heading{top:0;left:0;z-index:5;background:#f3f5f8;text-align:left;padding-left:18px;border-right:1px solid var(--rank-line)}
 .queries-card .positions-table .engine-yandex{background:white}
 .queries-card .positions-table .engine-google{background:white}
-.queries-card .positions-table thead .engine-yandex{background:white;color:var(--ink)}
-.queries-card .positions-table thead .engine-google{background:white;color:var(--ink)}
-.queries-card .positions-table .engine-yandex.current{background:white}
-.queries-card .positions-table .engine-google.current{background:white}
-.queries-card .positions-table thead .current{font-weight:700;box-shadow:inset 0 -2px currentColor}
+.queries-card .positions-table thead .engine-yandex{background:#f3f5f8;color:var(--ink)}
+.queries-card .positions-table thead .engine-google{background:#f3f5f8;color:var(--ink)}
+.queries-card .positions-table tbody .engine-yandex.current{background:white}
+.queries-card .positions-table tbody .engine-google.current{background:white}
+.queries-card .positions-table thead .current{background:#e9edf3;font-weight:700;box-shadow:inset 0 -2px currentColor}
 .queries-card .positions-table .engine-google.engine-start{border-left:2px solid #bac2d0}
 .rank-date{display:inline-flex;flex-direction:column;gap:3px;font-size:14px;line-height:1.25;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rank-date small{font-size:11px;line-height:1.25;font-weight:400}
@@ -95,7 +95,7 @@
 .queries-card .positions-table tbody tr:hover .query-cell{background:#f7f7fb}
 .queries-card .positions-table tbody tr:hover .engine-yandex{background:#f7f7fb}
 .queries-card .positions-table tbody tr:hover .engine-google{background:#f7f7fb}
-.queries-card .positions-table .delta{font-size:13px;font-weight:500;line-height:1.4;white-space:nowrap}
+.queries-card .positions-table .delta{font-size:12px;font-weight:500;line-height:1.4;white-space:normal}
 .queries-card .positions-table .delta svg{width:14px;height:14px;flex-shrink:0}
 .queries-card .positions-table .delta>span[aria-hidden=true]{display:inline-flex;align-items:center;gap:3px}
 .queries-card .table-footer{padding-top:20px}
@@ -150,4 +150,22 @@
   .rank-bars{gap:20px}
   .rank-bar-group{gap:8px;min-width:0}
   .rank-bar{width:36px}
+}
+
+/* Full change labels on desktop, compact equivalents on narrow screens. */
+.rank-change-short,.queries-card .positions-table .delta>span.delta-compact{display:none}
+@media(max-width:600px){
+  .queries-card .positions-table.archive-positions .query-col{width:38%}
+  .queries-card .positions-table .period-heading{padding-left:2px;padding-right:2px}
+  .rank-date{font-size:11px}
+  .rank-change-label,.queries-card .positions-table .delta>span.delta-full{display:none}
+  .rank-change-short,.queries-card .positions-table .delta>span.delta-compact{display:inline-flex}
+  .rank-change-short{font-size:11px}
+}
+@media(max-width:360px){
+  .queries-card .positions-table.archive-positions .query-col{width:36%}
+  .rank-date{font-size:10.5px}
+}
+@media(min-width:601px) and (max-width:1023px){
+  .queries-card .positions-table .period-heading{padding-left:5px;padding-right:5px}
 }

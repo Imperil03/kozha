@@ -113,6 +113,7 @@
   }
   function archiveValue(cell){
     const text=cell?.text?.trim();
+    if(text==='101')return null;
     return /^[1-9]\d*$/.test(text||'')?Number(text):undefined;
   }
   function archiveDate(label){
