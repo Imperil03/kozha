@@ -114,7 +114,7 @@
     const filtered=M.filterRows(rows,state.filters),visible=filtered.slice(0,state.limit),archive=report.kind==='archive';
     $('query-rows').innerHTML=visible.map(r=>{
       const qid='query-'+r.id;
-      const query=`<th scope="row" id="${esc(qid)}" class="query-cell">${archive?cellHTML(r.queryCell):esc(r.query)}${r.googleQueryCell?`<span class="query-direction">Google: ${cellHTML(r.googleQueryCell)}</span>`:''}${r.direction?`<span class="query-direction">${esc(r.direction)}</span>`:''}</th>`;
+      const query=`<th scope="row" id="${esc(qid)}" class="query-cell">${archive?cellHTML(r.queryCell):esc(r.query)}${r.googleQueryCell?`<span class="query-direction">Google: ${cellHTML(r.googleQueryCell)}</span>`:''}</th>`;
       const cells=engines.map(e=>{
         const values=archive?r[e]:view.before?[r[e].before,r[e].after,r[e].change]:[r[e].after];
         const currentIndex=archive?values.length-1:view.before?1:0;
