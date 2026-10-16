@@ -155,7 +155,8 @@
     if(currentDetail===work.id&&dialog.open)return;
     dialog.dataset.reportView='works';
     $('detail-title').textContent=work.title.text;$('detail-meta').hidden=true;
-    $('detail-body').innerHTML=`<div class="actual-result">${[['Что сделали',work.description],['Для чего это нужно',work.why],['Материалы',work.attachment]].filter(([,c])=>c.text).map(([h,c])=>`<section class="detail-section"><h3>${h}</h3>${proseHTML([c])}</section>`).join('')}${(work.evidence||[]).map(imageHTML).join('')}</div>`;
+    const sections=work.details||[['Что сделали',work.description],['Для чего это нужно',work.why],['Материалы',work.attachment]].filter(([,c])=>c.text).map(([title,c])=>({title:{text:title},content:[c]}));
+    $('detail-body').innerHTML=`<div class="actual-result">${sections.map((section,i)=>`<section class="detail-section"><h3>${cellHTML(section.title)}</h3>${proseHTML([...section.content,...(work.details&&i===sections.length-1&&work.attachment.text?[work.attachment]:[])])}</section>`).join('')}${(work.evidence||[]).map(imageHTML).join('')}</div>`;
     if(!dialog.open){dialog.showModal();document.body.classList.add('dialog-open');}
     $('detail-body').scrollTop=0;$('close-detail').focus({preventScroll:true});currentDetail=work.id;
   }

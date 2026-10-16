@@ -172,6 +172,14 @@
       for(const work of report.works) {
         if(typeof work.id!=='string'||ids.has(work.id)) throw Error('Повторная работа.');
         ids.add(work.id); ['title','why','description','attachment'].forEach(k=>validateCell(work[k]));
+        if(work.details!==undefined){
+          if(!Array.isArray(work.details)||!work.details.length)throw Error('Некорректные разделы описания работы.');
+          for(const section of work.details){
+            validateCell(section?.title);
+            if(!Array.isArray(section.content)||!section.content.length)throw Error('Нет содержимого раздела работы.');
+            section.content.forEach(validateCell);
+          }
+        }
         (work.evidence||[]).forEach(validateImage);
       }
       if(report.kind==='archive') {
