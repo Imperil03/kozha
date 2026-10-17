@@ -45,6 +45,16 @@
   function proseHTML(cells){
     return `<div class="report-prose">${M.proseBlocks(cells).map(block=>block.type==='p'?`<p>${cellHTML(block.cell)}</p>`:`<${block.type}${block.type==='ol'?` start="${esc(block.start)}"`:''}>${block.items.map(item=>`<li${block.type==='ol'?` value="${esc(item.value)}"`:''}>${cellHTML(item.cell)}</li>`).join('')}</${block.type}>`).join('')}</div>`;
   }
+  function detailContentHTML(blocks){
+    let text=[],html='';
+    for(const block of blocks){
+      if(!block.table){text.push(block);continue;}
+      const t=block.table;
+      html+=proseHTML(text);text=[];
+      html+=`<table class="detail-comparison"><caption class="sr-only">${cellHTML(t.caption)}</caption><thead><tr>${t.headers.map(c=>`<th scope="col">${cellHTML(c)}</th>`).join('')}</tr></thead><tbody>${t.rows.map(row=>`<tr>${row.map((c,i)=>i===0?`<th scope="row">${cellHTML(c)}</th>`:`<td>${cellHTML(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    }
+    return html+proseHTML(text);
+  }
   let report=null,view=null,rows=[],renderedMonth=null,lastOpener=null,currentDetail=null;
   const dialog=$('detail-dialog');
   function pendingHTML(kind){
@@ -156,7 +166,7 @@
     dialog.dataset.reportView='works';
     $('detail-title').textContent=work.title.text;$('detail-meta').hidden=true;
     const sections=work.details||[['Что сделали',work.description],['Для чего это нужно',work.why],['Материалы',work.attachment]].filter(([,c])=>c.text).map(([title,c])=>({title:{text:title},content:[c]}));
-    $('detail-body').innerHTML=`<div class="actual-result">${sections.map((section,i)=>`<section class="detail-section"><h3>${cellHTML(section.title)}</h3>${proseHTML([...section.content,...(work.details&&i===sections.length-1&&work.attachment.text?[work.attachment]:[])])}</section>`).join('')}${(work.evidence||[]).map(imageHTML).join('')}</div>`;
+    $('detail-body').innerHTML=`<div class="actual-result">${sections.map((section,i)=>`<section class="detail-section"><h3>${cellHTML(section.title)}</h3>${detailContentHTML([...section.content,...(work.details&&i===sections.length-1&&work.attachment.text?[work.attachment]:[])])}</section>`).join('')}${(work.evidence||[]).map(imageHTML).join('')}</div>`;
     if(!dialog.open){dialog.showModal();document.body.classList.add('dialog-open');}
     $('detail-body').scrollTop=0;$('close-detail').focus({preventScroll:true});currentDetail=work.id;
   }

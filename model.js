@@ -156,6 +156,17 @@
   function validateImage(i){
     if(!i||typeof i.path!=='string'||!safeHref(i.path)||!Number.isFinite(i.width)||!Number.isFinite(i.height)||i.width<=0||i.height<=0)throw Error('Некорректное изображение.');
   }
+  function validateDetailBlock(block){
+    if(block?.table===undefined){validateCell(block);return;}
+    const t=block.table;
+    validateCell(t?.caption);
+    if(!Array.isArray(t.headers)||t.headers.length<2||!Array.isArray(t.rows)||!t.rows.length)throw Error('Некорректная таблица работы.');
+    t.headers.forEach(validateCell);
+    for(const row of t.rows){
+      if(!Array.isArray(row)||row.length!==t.headers.length)throw Error('Нарушено число столбцов таблицы работы.');
+      row.forEach(validateCell);
+    }
+  }
   function validateData(data) {
     if(data?.project?.id!=='kozha'||data.project.website!=='https://kozhaclinic.ru/') throw Error('Чужой проект.');
     if(!Array.isArray(data.reports)||!data.reports.length) throw Error('Нет отчётов.');
@@ -177,7 +188,7 @@
           for(const section of work.details){
             validateCell(section?.title);
             if(!Array.isArray(section.content)||!section.content.length)throw Error('Нет содержимого раздела работы.');
-            section.content.forEach(validateCell);
+            section.content.forEach(validateDetailBlock);
           }
         }
         (work.evidence||[]).forEach(validateImage);

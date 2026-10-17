@@ -18,6 +18,17 @@
 .works-table.archive-works th:last-child{width:32%}
 .work-attachment{font-size:14px;line-height:1.6;margin-top:16px}
 .detail-dialog .report-prose{font-size:15px;line-height:1.8}
+.detail-dialog .drawer-header>div{min-width:0}
+.detail-dialog .drawer-header h2{overflow-wrap:anywhere}
+@media(max-width:380px){.detail-dialog[data-report-view="works"] .drawer-header h2{font-size:20px}}
+.detail-comparison{width:100%;table-layout:fixed;border-collapse:collapse;margin:22px 0;font-size:14px;line-height:1.5;color:var(--ink)}
+.detail-comparison th,.detail-comparison td{padding:12px 10px;border-bottom:1px solid #dfe2e8;text-align:left;vertical-align:middle;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.detail-comparison thead th{font-weight:600;background:#e9e6f8}
+.detail-comparison thead th:first-child{width:50%}
+.detail-comparison tbody th{font-weight:400}
+.detail-comparison tbody td:nth-child(2){background:#f4f5f8}
+.detail-comparison tbody td:nth-child(3){background:#eaf4f2}
+@media(max-width:600px){.detail-comparison{font-size:13px}.detail-comparison th,.detail-comparison td{padding:10px 5px}}
 .archive-image{margin:24px 0 36px;max-width:100%}
 .archive-image img{display:block;max-width:100%;height:auto;border-radius:8px}
 .archive-notes{font-size:var(--intro-size);line-height:1.85;margin-bottom:28px}
