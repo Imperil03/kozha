@@ -217,7 +217,7 @@
       return `<div class="results-heading"><h2>${cellHTML(report.title)}</h2>${blocksHTML(report.intro,report.images.filter(i=>i.row<=split+1))}</div>${kpisHTML()}${chartsHTML()}<div class="archive-notes">${blocksHTML(report.afterMetrics,report.images.filter(i=>i.row>split+1&&i.row<report.positionsStartRow))}</div>${tableHTML()}${report.images.filter(i=>i.row>report.positionsStartRow).map(imageHTML).join('')}`;
     }
     refreshRankingView();
-    const heading=`<div class="results-heading"><h2>Результаты за ${M.monthLabel(state.month).toLowerCase()}</h2>${report.intro?.length?proseHTML(report.intro):trafficSummaryHTML()}</div>`;
+    const heading=`<div class="results-heading client-results-heading"><h2>Результаты за ${M.monthLabel(state.month).toLowerCase()}</h2>${report.intro?.length?proseHTML(report.intro):trafficSummaryHTML()}</div>`;
     if(!view)return heading+trafficHTML()+pendingHTML('results');
     return `${heading}${rankingPanelsHTML()}${trafficHTML()}${tableHTML()}`;
   }
