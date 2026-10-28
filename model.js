@@ -152,6 +152,20 @@
     const scope=s=>s?{...s,rows:filterRankingPopulation(s.rows,filters)}:null;
     return rankingsView({...rankings,before:scope(rankings.before),after:scope(rankings.after)});
   }
+  function clientTimelineView(report,rankings,filters={}) {
+    const view=scopedRankingsView(rankings,filters);
+    if(!view)return null;
+    const snapshots=[report.rankingHistory?.initial,report.rankingHistory?.previous||report.rankings?.before||rankings.before,rankings.after];
+    const indexes=snapshots.map(s=>new Map((s?.rows||[]).map(r=>[r.id,r])));
+    const rows=view.rows.map(row=>({...row,...Object.fromEntries(ENGINES.map(e=>[e,{...row[e],history:indexes.map(index=>{
+      const historical=index.get(row.id);
+      return historical&&normalizeQuery(historical.query)===normalizeQuery(row.query)?historical[e]:undefined;
+    })}]))}));
+    // Counts are observations on each date, not cross-provider movement. A
+    // display fallback of 101 must never become a stored measurement or gain.
+    const stats=Object.fromEntries(ENGINES.map(e=>[e,Object.fromEntries([3,10,50].map(top=>['top'+top,snapshots.map((_,i)=>rows.filter(row=>Number.isInteger(row[e].history[i])&&row[e].history[i]<=top).length)]))]));
+    return {...view,rows,timeline:{dates:snapshots.map(s=>s?.date||null),total:rows.length,stats}};
+  }
   const normalizeQuery=query=>query.normalize('NFKC').toLocaleLowerCase('ru-RU').trim().replace(/\s+/g,' ');
   function groupIndex(groups=[]){
     const index=new Map();
@@ -331,6 +345,10 @@
         }
         report.images.forEach(validateImage);
       } else if(report.kind==='current') {
+        if(report.rankingHistory!==undefined){
+          for(const snap of [report.rankingHistory.initial,report.rankingHistory.previous])validateSnapshot(snap);
+          if(report.rankingHistory.initial.date>=report.rankingHistory.previous.date||report.rankingHistory.previous.date>=report.month+'-01')throw Error('Некорректный порядок исторических дат.');
+        }
         if(report.rankings?.after) {
           if(!report.rankings.after.date.startsWith(report.month+'-')) throw Error('Замер относится к другому месяцу.');
           for(const snap of [report.rankings.before,report.rankings.after].filter(Boolean))validateSnapshot(snap);
@@ -349,5 +367,5 @@
     if(!months.has(data.project.defaultMonth)) throw Error('Нет текущего месяца.');
     return true;
   }
-  return {ENGINES,validMonth,monthLabel,safeHref,getReport,defaultMonth,readRoute,workDetailsEnabled,sliceCell,proseBlocks,change,rankingsView,scopedRankingsView,selectRankingSeries,rankingSeriesOptions,filterRankingPopulation,archiveRows,filterRows,validateData,comparableSnapshots,comparableEngine,rankBand,groupIndex,validateSnapshot,validateTraffic,ownRankingUrl};
+  return {ENGINES,validMonth,monthLabel,safeHref,getReport,defaultMonth,readRoute,workDetailsEnabled,sliceCell,proseBlocks,change,rankingsView,scopedRankingsView,clientTimelineView,selectRankingSeries,rankingSeriesOptions,filterRankingPopulation,archiveRows,filterRows,validateData,comparableSnapshots,comparableEngine,rankBand,groupIndex,validateSnapshot,validateTraffic,ownRankingUrl};
 });
