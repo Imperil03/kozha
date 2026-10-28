@@ -7,7 +7,7 @@
   try{M.validateData(data);}catch{$('panel-results').innerHTML='<p class="notice">Не удалось открыть данные отчёта. Обратитесь к автору отчёта.</p>';return;}
   const tabs=['results','works'], engines=M.ENGINES;
   const months=data.reports.map(r=>r.month);
-  const state={...M.readRoute(data,location.href),filters:{search:'',direction:'',trend:'all'},limit:25,engine:'yandex'};
+  const state={...M.readRoute(data,location.href),filters:{search:'',direction:'',trend:'all'},limit:25,engine:'yandex',seriesId:null,cohort:'all',trafficWeek:null,trafficVisible:new Set(['total','google','yandex','other'])};
   const number=v=>new Intl.NumberFormat('ru-RU',{maximumFractionDigits:1}).format(v);
   const date=v=>v?new Intl.DateTimeFormat('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}).format(new Date(v+'T12:00:00Z')):'';
   const icon=(name,cls='')=>`<svg class="${cls}" aria-hidden="true" viewBox="0 0 24 24">${{
@@ -55,7 +55,7 @@
     }
     return html+proseHTML(text);
   }
-  let report=null,view=null,rows=[],renderedMonth=null,lastOpener=null,currentDetail=null;
+  let report=null,view=null,rows=[],rankingPair=null,populationRows=[],renderedMonth=null,lastOpener=null,currentDetail=null;
   const dialog=$('detail-dialog');
   function pendingHTML(kind){
     const label=M.monthLabel(state.month).toLowerCase();
@@ -75,7 +75,8 @@
     return `<div class="engine-kpi-metric"><h4>Топ-${top}</h4><div class="kpi-values">${before===null?'':`<div><span class="kpi-period">Было</span><span class="number before">${number(before)}</span></div>${icon('arrow','kpi-arrow')}`}<div>${before===null?'':'<span class="kpi-period">Стало</span>'}<span class="number ${trend}">${number(after)}</span></div></div><p class="kpi-count">из ${stats.total} запросов · ${number(after/stats.total*100)}%</p></div>`;
   }
   function kpisHTML(){
-    return `<div class="engine-kpi-grid">${engines.map(e=>`<section class="engine-kpi-card surface engine-${e}"><h3 class="searcher-name">${e==='yandex'?'Яндекс':'Google'}</h3><div class="engine-kpi-metrics">${report.kind==='archive'?report.metrics[e].map(archiveMetricHTML).join(''):[10,3].map(t=>apiMetricHTML(e,t)).join('')}</div>${report.kind!=='archive'&&view.stats[e].newCount?`<p class="kpi-count">Новые запросы: ${view.stats[e].newCount}. Показаны в таблице, отдельно от сравнения.</p>`:''}</section>`).join('')}</div>`;
+    const tops=report.kind!=='archive'&&view.after.sourceLabel==='XMLStock'?[3,10,50]:[10,3];
+    return `<div class="engine-kpi-grid">${engines.map(e=>`<section class="engine-kpi-card surface engine-${e}"><h3 class="searcher-name">${e==='yandex'?'Яндекс':'Google'}</h3>${report.kind==='archive'?'':`<p class="engine-measurement">${engineMeasurement(e)}</p>`}<div class="engine-kpi-metrics ${tops.length===3?'has-top50':''}">${report.kind==='archive'?report.metrics[e].map(archiveMetricHTML).join(''):tops.map(t=>apiMetricHTML(e,t)).join('')}</div>${report.kind!=='archive'&&view.stats[e].newCount?`<p class="kpi-count">Новые запросы: ${view.stats[e].newCount}. Показаны в таблице, отдельно от сравнения.</p>`:''}</section>`).join('')}</div>`;
   }
   function chartsHTML(){
     const archive=report.kind==='archive';
@@ -90,8 +91,86 @@
       const title=`<h3>${e==='yandex'?'Яндекс':'Google'}</h3>`;
       if(!archive&&!view.stats[e].total)return `<section class="ranking-chart surface">${title}<p class="chart-placeholder">Нет данных</p></section>`;
       const compared=archive||view.stats[e].comparable;
-      return `<section class="ranking-chart surface">${title}<div class="rank-bars">${pairs[e].map(m=>`<div class="rank-bar-group">${['before','after'].map(s=>m[s]===null?'':`<div class="rank-bar ${s}" style="height:${Math.max(0,m[s])/max*104}px"><span>${number(m[s])}${archive?'%':''}</span></div>`).join('')}<strong>Топ-${m.top}</strong></div>`).join('')}</div><div class="chart-legend">${compared?`<span><i class="before-key"></i>Было${!archive&&view.before?' · '+date(view.before.date):''}</span>`:''}<span><i></i>${compared?'Стало':'Сейчас'}${!archive?' · '+date(view.after.date):''}</span></div></section>`;
+      return `<section class="ranking-chart surface">${title}<div class="rank-bars">${pairs[e].map(m=>`<div class="rank-bar-group">${['before','after'].map(s=>m[s]===null?'':`<div class="rank-bar ${s}" style="height:${Math.max(0,m[s])/max*104}px"><span>${number(m[s])}${archive?'%':''}</span></div>`).join('')}<strong>Топ-${m.top}</strong></div>`).join('')}</div><div class="chart-legend">${compared?`<span><i class="before-key"></i>Было${!archive&&view.before?' · '+engineDate(view.before,e):''}</span>`:''}<span><i></i>${compared?'Стало':'Сейчас'}${!archive?' · '+engineDate(view.after,e):''}</span></div></section>`;
     }).join('')}</div>`;
+  }
+  function engineDate(snapshot,engine){
+    if(!snapshot || !snapshot.rows.some(row=>row[engine]!==undefined))return 'Нет замера';
+    const meta=snapshot.engines?.[engine];
+    if(meta?.observedFrom&&meta?.observedTo){
+      const localDate=new Intl.DateTimeFormat('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Asia/Yekaterinburg'});
+      const from=localDate.format(new Date(meta.observedFrom)),to=localDate.format(new Date(meta.observedTo));
+      return from===to?to:`${from} – ${to}`;
+    }
+    return date(snapshot.date);
+  }
+  function engineMeasurement(engine){
+    const meta=view.after.engines?.[engine];
+    if(!view.after.rows.some(row=>row[engine]!==undefined))return 'Нет текущего замера';
+    const depth=meta?.depth||(typeof view.after.depth==='object'?view.after.depth?.[engine]:view.after.depth);
+    const method=meta?.method||view.after.sourceLabel;
+    const methodLabel={'Yandex Live · organic v2':'Яндекс Live','Google XML · organic v2':'Google XML'}[method]||method;
+    return [methodLabel,engineDate(view.after,engine),depth?'Глубина ТОП-'+depth:'Историческая глубина не сохранена'].filter(Boolean).map(esc).join(' · ');
+  }
+  function refreshRankingView(){
+    rankingPair=M.selectRankingSeries(report,state.seriesId);
+    if(!rankingPair){view=null;rows=[];populationRows=[];return;}
+    state.seriesId=rankingPair.id;
+    const all=M.rankingsView(rankingPair)?.rows||[];
+    populationRows=M.filterRankingPopulation(all,{cohort:state.cohort});
+    view=M.scopedRankingsView(rankingPair,{cohort:state.cohort,direction:state.filters.direction,search:state.filters.search});
+    rows=view?.rows||[];
+    if(!view?.comparable)state.filters.trend='all';
+  }
+  function monitoringControlsHTML(){
+    const options=M.rankingSeriesOptions(report),all=M.rankingsView(rankingPair)?.rows||[];
+    const scopes=[['all','Все запросы',all.length],['base','Базовые',all.filter(r=>r.cohorts?.includes('base')||!r.cohorts?.length).length],['september','Сентябрь',all.filter(r=>r.cohorts?.includes('september')||r.direction==='Сентябрь 2026').length],['october','Октябрь',all.filter(r=>r.cohorts?.includes('october')).length]].filter(([id,,count])=>count>0&&(id!=='base'||count<all.length));
+    return `<section class="monitoring-controls surface" aria-label="Набор позиций"><div class="filter-field"><label for="ranking-series">Источник замера</label><div class="select-wrap"><select id="ranking-series">${options.map(o=>`<option value="${esc(o.id)}" ${o.id===state.seriesId?'selected':''}>${esc(o.label)}</option>`).join('')}</select>${icon('chevron')}</div></div><div class="filter-field"><label for="ranking-cohort">Набор запросов</label><div class="select-wrap"><select id="ranking-cohort">${scopes.map(([id,label,count])=>`<option value="${id}" ${id===state.cohort?'selected':''}>${label} — ${count}</option>`).join('')}</select>${icon('chevron')}</div></div></section>`;
+  }
+  function rankingSummaryHTML(){
+    if(!view.before)return `<p class="metrics-note baseline-note">Первый срез ${esc(view.after.sourceLabel)} — база для следующих проверок. Сопоставимого предыдущего замера пока нет: рост, снижение и стабильность не рассчитываем.</p>`;
+    if(!view.comparable)return '<p class="metrics-note baseline-note">Условия замеров различаются или нет общей измеренной выборки. Динамику позиций не рассчитываем.</p>';
+    return '<p class="metrics-note">Динамика рассчитана по одинаковым запросам и сопоставимым условиям. Даты и наличие замера указаны отдельно для каждого поисковика.</p>';
+  }
+  function rankingPanelsHTML(){
+    return `<div id="ranking-kpis">${kpisHTML()}</div><div id="ranking-summary">${rankingSummaryHTML()}</div><div id="ranking-charts">${chartsHTML()}</div>`;
+  }
+  function updateRankingPopulation(){
+    refreshRankingView();
+    if(!view)return;
+    $('ranking-kpis').innerHTML=kpisHTML();$('ranking-summary').innerHTML=rankingSummaryHTML();$('ranking-charts').innerHTML=chartsHTML();
+    const trend=$('trend-filter');
+    if(trend){trend.disabled=!view.comparable;trend.value=state.filters.trend;trend.title=view.comparable?'':'Нет сопоставимого замера';}
+    const note=$('ranking-population-note');
+    if(note)note.textContent=`Показатели выше рассчитаны по ${rows.length} запросам выбранного набора, направления и поиска. Фильтр динамики меняет только строки таблицы.`;
+    renderQueries({resetScroll:true});
+  }
+
+  const trafficSeries=[['total','Все поисковики','#5953cf'],['google','Google','#1b5fbc'],['yandex','Яндекс','#bd2f1b'],['other','Другие поисковики','#64748b']];
+  function trafficChange(before,after){
+    const difference=after-before,cls=difference>0?'positive':difference<0?'negative':'neutral';
+    const absolute=(difference>0?'+':'')+number(difference),percent=before>0?`${difference>0?'+':''}${number(difference/before*100)}%`:'нет базы для процента';
+    return `<span class="traffic-delta ${cls}">${absolute} <small>(${percent})</small></span>`;
+  }
+  function trafficHTML(){
+    const traffic=report.traffic;
+    if(!traffic?.weeks?.length)return '';
+    return `<section class="organic-traffic" aria-labelledby="organic-title"><div class="traffic-section-heading"><h2 id="organic-title">Поисковый трафик</h2><p>${esc(traffic.sourceLabel)} · ${esc(traffic.metric)} · данные по ${date(traffic.observedTo)}</p></div><div class="traffic-comparisons">${traffic.comparisons.map(c=>`<section class="traffic-period-card surface"><h3>${esc(c.label)}</h3><p class="traffic-periods"><span><b>Было:</b> ${date(c.before.start)} — ${date(c.before.end)}</span><span><b>Стало:</b> ${date(c.after.start)} — ${date(c.after.end)}</span></p><table class="traffic-comparison-table"><caption class="sr-only">${esc(c.label)}: визиты из поисковых систем</caption><thead><tr><th scope="col">Поисковик</th><th scope="col">Было</th><th scope="col">Стало</th><th scope="col">Изменение</th></tr></thead><tbody>${trafficSeries.map(([key,label])=>`<tr ${key==='total'?'class="traffic-total"':''}><th scope="row">${label}</th><td>${number(c.before[key])}</td><td>${number(c.after[key])}</td><td>${trafficChange(c.before[key],c.after[key])}</td></tr>`).join('')}</tbody></table></section>`).join('')}</div><section class="traffic-trend-card surface" aria-labelledby="traffic-trend-title"><h3 id="traffic-trend-title">Визиты из поиска по неделям</h3><p class="traffic-chart-caption">${date(traffic.observedFrom)} — ${date(traffic.observedTo)} · ${traffic.weeks.length} полные недели</p><div class="traffic-series-controls" role="group" aria-label="Линии графика">${trafficSeries.map(([key,label,color])=>`<button type="button" data-traffic-series="${key}" aria-pressed="${state.trafficVisible.has(key)}" style="--series-color:${color}"><i aria-hidden="true"></i>${label}</button>`).join('')}</div><div id="traffic-plot"></div><label class="traffic-week-label" for="traffic-week">Выберите неделю для просмотра значений</label><input id="traffic-week" class="traffic-week-range" type="range" min="0" max="${traffic.weeks.length-1}" step="1" value="${traffic.weeks.length-1}" aria-label="Неделя на графике"><div id="traffic-week-readout" class="traffic-week-readout" role="status" aria-live="polite"></div><details class="traffic-source-table"><summary>Таблица за все ${traffic.weeks.length} недели</summary><div class="traffic-data-scroll"><table><thead><tr><th scope="col">Неделя</th>${trafficSeries.map(([,label])=>`<th scope="col">${label}</th>`).join('')}</tr></thead><tbody>${traffic.weeks.map(w=>`<tr><th scope="row">${date(w.start)} — ${date(w.end)}</th>${trafficSeries.map(([key])=>`<td>${number(w[key])}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details><p class="traffic-source-note">Атрибуция: ${esc(traffic.attribution)}. В выгрузке нет детализации по региону и устройствам; этот трафик не ограничиваем условиями съёма позиций «Сургут, смартфоны». Недели не делим между календарными месяцами. Долгосрочная динамика не доказывает эффект только октябрьских работ.</p></section></section>`;
+  }
+  function renderTrafficChart(){
+    const weeks=report.traffic?.weeks;
+    if(!weeks?.length||!$('traffic-plot'))return;
+    const selected=Math.max(0,Math.min(weeks.length-1,state.trafficWeek??weeks.length-1));state.trafficWeek=selected;
+    const visible=trafficSeries.filter(([key])=>state.trafficVisible.has(key)),width=window.matchMedia('(max-width:600px)').matches?600:960,height=260,left=52,right=18,top=20,bottom=42,plotWidth=width-left-right,plotHeight=height-top-bottom;
+    const maximum=Math.max(20,...weeks.flatMap(w=>visible.map(([key])=>w[key]))),ceiling=Math.ceil(maximum/20)*20;
+    const x=i=>left+i/(Math.max(1,weeks.length-1))*plotWidth,y=value=>top+plotHeight-value/ceiling*plotHeight;
+    const ticks=[0,.25,.5,.75,1].map(part=>`<g class="traffic-grid"><line x1="${left}" x2="${width-right}" y1="${y(ceiling*part)}" y2="${y(ceiling*part)}"/><text x="${left-10}" y="${y(ceiling*part)+5}" text-anchor="end">${number(ceiling*part)}</text></g>`).join('');
+    const indexes=[...new Set([0,Math.round((weeks.length-1)*.2),Math.round((weeks.length-1)*.4),Math.round((weeks.length-1)*.6),Math.round((weeks.length-1)*.8),weeks.length-1])];
+    $('traffic-plot').innerHTML=`<svg class="organic-week-chart" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="organic-chart-title organic-chart-desc"><title id="organic-chart-title">Визиты из поисковых систем по полным неделям</title><desc id="organic-chart-desc">Недельные визиты. Отдельные линии: все поисковики, Google, Яндекс и другие. Значения доступны под графиком, через ползунок и в таблице.</desc>${ticks}${visible.map(([key,label,color])=>`<polyline class="traffic-line" aria-label="${label}" stroke="${color}" points="${weeks.map((w,i)=>`${x(i)},${y(w[key])}`).join(' ')}"/>`).join('')}<line class="traffic-selected-week" x1="${x(selected)}" x2="${x(selected)}" y1="${top}" y2="${height-bottom}"/>${visible.map(([key,,color])=>`<circle cx="${x(selected)}" cy="${y(weeks[selected][key])}" r="4.5" fill="${color}"/>`).join('')}${indexes.map(i=>`<text class="traffic-axis-date" x="${x(i)}" y="${height-12}" text-anchor="${i===0?'start':i===weeks.length-1?'end':'middle'}">${date(weeks[i].start).slice(0,5)}</text>`).join('')}${weeks.map((w,i)=>`<rect class="traffic-week-hit" data-traffic-week="${i}" x="${x(i)-(i===0?0:plotWidth/(weeks.length-1)/2)}" y="${top}" width="${plotWidth/(weeks.length-1)}" height="${plotHeight}"><title>${date(w.start)} — ${date(w.end)}: ${number(w.total)} визитов из поиска</title></rect>`).join('')}</svg>`;
+    const week=weeks[selected];
+    $('traffic-week-readout').innerHTML=`<p>${date(week.start)} — ${date(week.end)}</p><dl>${trafficSeries.map(([key,label,color])=>`<div><dt><i style="background:${color}" aria-hidden="true"></i>${label}</dt><dd>${number(week[key])}</dd></div>`).join('')}</dl>`;
+    $('traffic-week').value=String(selected);
+    document.querySelectorAll('[data-traffic-series]').forEach(button=>button.setAttribute('aria-pressed',String(state.trafficVisible.has(button.dataset.trafficSeries))));
   }
   function dateHTML(label){
     const parts=label.match(/^(\d{1,2}\.\d{1,2}\.)(\d{4})$/);
@@ -99,19 +178,23 @@
   }
   function tableHTML(){
     const archive=report.kind==='archive';
-    const headers=Object.fromEntries(engines.map(e=>[e,archive?[...report.positions.headers[e],'Изменение']:view.before?[date(view.before.date),date(view.after.date),'Изменение']:[date(view.after.date)]]));
-    const directions=[...new Set(rows.map(r=>r.direction).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
+    const headers=Object.fromEntries(engines.map(e=>[e,archive?[...report.positions.headers[e],'Изменение']:view.before?[engineDate(view.before,e),engineDate(view.after,e),'Изменение']:[engineDate(view.after,e)]]));
+    const directionRows=archive?rows:populationRows;
+    const directions=[...new Set(directionRows.map(r=>r.direction).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
     const currentIndex=e=>archive?headers[e].length-2:view.before?1:0;
     const columns=engines.map(e=>headers[e].map((h,i)=>`<th scope="col" id="rank-${e}-${i}" class="engine-${e} period-heading ${i===0?'engine-start':''} ${i===currentIndex(e)-1?'period-before':''} ${i===currentIndex(e)?'current':''}">${h==='Изменение'?'<span class="rank-change-label" aria-hidden="true">Изменение</span><span class="rank-change-short" aria-hidden="true">Изм.</span><span class="sr-only">Изменение</span>':dateHTML(h)}</th>`).join('')).join('');
     const dirs=`<div class="filter-field"><label for="direction-filter">Направление</label><div class="select-wrap"><select id="direction-filter"><option value="">Все направления</option>${directions.map(d=>`<option value="${esc(d)}" ${d===state.filters.direction?'selected':''}>${esc(d)}</option>`).join('')}${rows.some(r=>!r.direction)?'<option value="__unmapped">Группа не найдена</option>':''}</select>${icon('chevron')}</div></div>`;
-    const trends=`<div class="filter-field"><label for="trend-filter">Динамика в любом поисковике</label><div class="select-wrap"><select id="trend-filter">${[['all','Все изменения'],['up','Рост'],['down','Снижение'],['same','Без изменений'],['new','Новые запросы']].map(([v,l])=>`<option value="${v}" ${v===state.filters.trend?'selected':''}>${l}</option>`).join('')}</select>${icon('chevron')}</div></div>`;
+    const trends=`<div class="filter-field"><label for="trend-filter">Динамика в любом поисковике</label><div class="select-wrap"><select id="trend-filter" ${!archive&&!view.comparable?'disabled title="Нет сопоставимого замера"':''}>${[['all',!archive&&!view.comparable?'Нет сопоставимого замера':'Все изменения'],['up','Рост'],['down','Снижение'],['same','Без изменений'],['new','Новые запросы']].map(([v,l])=>`<option value="${v}" ${v===state.filters.trend?'selected':''}>${l}</option>`).join('')}</select>${icon('chevron')}</div></div>`;
     const legend=`<div class="rank-legend" aria-label="Цвет позиций в поиске"><span class="legend-title">Позиции:</span><span><i class="legend-swatch rank-top3" aria-hidden="true"></i>1–3</span><span><i class="legend-swatch rank-top10" aria-hidden="true"></i>4–10</span><span><i class="legend-swatch rank-other" aria-hidden="true"></i>11+</span></div>`;
-    return `<section class="queries-card surface"><div class="section-heading"><h2>Позиции запросов</h2><p id="query-total">Запросов: ${rows.length}</p></div><div class="table-filters"><div class="filter-field search"><label for="query-search">Найти запрос</label><input id="query-search" type="search" placeholder="Например, лазерная эпиляция" value="${esc(state.filters.search)}"></div>${dirs}${trends}</div><div class="rank-tools"><div class="mobile-engine" role="group" aria-label="Поисковик в таблице">${engines.map(e=>`<button type="button" data-engine="${e}" aria-pressed="${state.engine===e}">${e==='yandex'?'Яндекс':'Google'}</button>`).join('')}</div>${legend}<button type="button" class="filter-reset" id="reset-filters" hidden>Сбросить фильтры</button></div><div class="table-scroll positions-scroll" id="positions-wrap" data-engine="${state.engine}" role="region" tabindex="0" aria-label="Позиции запросов"><table class="positions-table ${archive?'archive-positions':''}"><caption class="sr-only">Позиции запросов за ${M.monthLabel(state.month).toLowerCase()}</caption><colgroup><col class="query-col">${engines.map(e=>headers[e].map(()=>`<col class="rank-col engine-${e}">`).join('')).join('')}</colgroup><thead><tr><th rowspan="2" scope="col" class="query-heading">Запрос</th>${engines.map(e=>`<th id="engine-${e}" colspan="${headers[e].length}" scope="colgroup" class="engine-${e} engine-title engine-start">${e==='yandex'?'Яндекс':'Google'}</th>`).join('')}</tr><tr>${columns}</tr></thead><tbody id="query-rows"></tbody></table></div><p id="query-empty" class="query-empty" hidden>Запросы не найдены. Измените поиск или сбросьте фильтры.</p><div class="table-footer"><span id="query-count" role="status" aria-live="polite"></span><button class="button-secondary" type="button" id="show-more">Показать ещё 25</button></div>${archive?'':'<p class="table-method">«—» - сайт не найден в результатах проверки. «Нет замера» - измерение отсутствует. Динамика рассчитана по запросам, проверенным в обоих срезах.</p>'}</section>`;
+    return `<section class="queries-card surface"><div class="section-heading"><h2>Позиции запросов</h2><p id="query-total">Запросов: ${rows.length}</p></div>${archive?'':`<p class="ranking-population-note" id="ranking-population-note">Показатели выше рассчитаны по ${rows.length} запросам выбранного набора, направления и поиска. Фильтр динамики меняет только строки таблицы.</p>`}<div class="table-filters"><div class="filter-field search"><label for="query-search">Найти запрос</label><input id="query-search" type="search" placeholder="Например, лазерная эпиляция" value="${esc(state.filters.search)}"></div>${dirs}${trends}</div><div class="rank-tools"><div class="mobile-engine" role="group" aria-label="Поисковик в таблице">${engines.map(e=>`<button type="button" data-engine="${e}" aria-pressed="${state.engine===e}">${e==='yandex'?'Яндекс':'Google'}</button>`).join('')}</div>${legend}<button type="button" class="filter-reset" id="reset-filters" hidden>Сбросить фильтры</button></div><div class="table-scroll positions-scroll" id="positions-wrap" data-engine="${state.engine}" role="region" tabindex="0" aria-label="Позиции запросов"><table class="positions-table ${archive?'archive-positions':!view.before?'initial-positions':''}"><caption class="sr-only">Позиции запросов за ${M.monthLabel(state.month).toLowerCase()}</caption><colgroup><col class="query-col">${engines.map(e=>headers[e].map(()=>`<col class="rank-col engine-${e}">`).join('')).join('')}</colgroup><thead><tr><th rowspan="2" scope="col" class="query-heading">Запрос</th>${engines.map(e=>`<th id="engine-${e}" colspan="${headers[e].length}" scope="colgroup" class="engine-${e} engine-title engine-start">${e==='yandex'?'Яндекс':'Google'}</th>`).join('')}</tr><tr>${columns}</tr></thead><tbody id="query-rows"></tbody></table></div><p id="query-empty" class="query-empty" hidden>Запросы не найдены. Измените поиск или сбросьте фильтры.</p><div class="table-footer"><span id="query-count" role="status" aria-live="polite"></span><button class="button-secondary" type="button" id="show-more">Показать ещё 25</button></div>${archive?'':`<p class="table-method">«—» - сайт не найден в проверенной выдаче${view.after.sourceLabel==='XMLStock'?' до ТОП-50':''}. «Нет замера» - измерение отсутствует. ${view.before?'Динамика рассчитана только по сопоставимым измерениям.':'Предыдущего сопоставимого замера нет.'} Число позиции со ссылкой открывает найденную страницу.</p>`}</section>`;
   }
-  function rankHTML(value,cell){
+  function rankHTML(value,cell,url){
     const band=M.rankBand(value);
     const content=cell?cellHTML(cell):value===undefined?'<span class="rank-no-measure">Нет замера</span>':value===null?'<span title="Сайт не найден в результатах проверки">—</span>':number(value);
-    return `<span class="rank-value rank-${band}">${content}</span>`;
+    const html=`<span class="rank-value rank-${band}">${content}</span>`;
+    const href=Number.isInteger(value)&&M.safeHref(url);
+    if(href&&/^https?:\/\//i.test(href)){const hostname=new URL(href).hostname;if(hostname==='kozhaclinic.ru'||hostname.endsWith('.kozhaclinic.ru'))return `<a class="rank-result-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="Найденная страница: ${esc(href)}">${html}${icon('external')}<span class="sr-only">Открыть найденную страницу</span></a>`;}
+    return html;
   }
   function deltaHTML(c){
     if(['up','down'].includes(c.kind))return `<span class="delta ${c.kind==='up'?'positive':'negative'}"><span aria-hidden="true">${icon(c.kind)}${number(c.amount)}</span><span class="sr-only">${c.kind==='up'?'Рост':'Снижение'} на ${c.amount}</span></span>`;
@@ -121,14 +204,14 @@
   }
   function renderQueries({resetScroll=false}={}){
     if(!$('query-rows'))return;
-    const filtered=M.filterRows(rows,state.filters),visible=filtered.slice(0,state.limit),archive=report.kind==='archive';
+    const archive=report.kind==='archive',filtered=M.filterRows(rows,archive?state.filters:{trend:state.filters.trend}),visible=filtered.slice(0,state.limit);
     $('query-rows').innerHTML=visible.map(r=>{
       const qid='query-'+r.id;
       const query=`<th scope="row" id="${esc(qid)}" class="query-cell">${archive?cellHTML(r.queryCell):esc(r.query)}${r.googleQueryCell?`<span class="query-direction">Google: ${cellHTML(r.googleQueryCell)}</span>`:''}</th>`;
       const cells=engines.map(e=>{
         const values=archive?[...r[e],r.changes[e].change]:view.before?[r[e].before,r[e].after,r[e].change]:[r[e].after];
         const currentIndex=archive?values.length-2:view.before?1:0;
-        return values.map((v,i)=>`<td headers="${esc(qid)} engine-${e} rank-${e}-${i}" class="engine-${e} ${i===0?'engine-start':''} ${i===currentIndex-1?'period-before':''} ${i===currentIndex?'current':''}">${archive&&i===values.length-1||!archive&&i===2?deltaHTML(v):archive?rankHTML(v.text,v):rankHTML(v)}</td>`).join('');
+        return values.map((v,i)=>`<td headers="${esc(qid)} engine-${e} rank-${e}-${i}" class="engine-${e} ${i===0?'engine-start':''} ${i===currentIndex-1?'period-before':''} ${i===currentIndex?'current':''}">${archive&&i===values.length-1||!archive&&i===2?deltaHTML(v):archive?rankHTML(v.text,v):rankHTML(v,null,i===currentIndex?r.urls?.[e]:null)}</td>`).join('');
       }).join('');
       return `<tr>${query}${cells}</tr>`;
     }).join('');
@@ -141,13 +224,14 @@
   }
   function resultsHTML(){
     if(report.kind==='archive'){
-      view=null;rows=M.archiveRows(report,data.keywordGroups);
+      view=null;rankingPair=null;populationRows=[];rows=M.archiveRows(report,data.keywordGroups);
       const split=report.intro.at(-1)?.row||0;
       return `<div class="results-heading"><h2>${cellHTML(report.title)}</h2>${blocksHTML(report.intro,report.images.filter(i=>i.row<=split+1))}</div>${kpisHTML()}${chartsHTML()}<div class="archive-notes">${blocksHTML(report.afterMetrics,report.images.filter(i=>i.row>split+1&&i.row<report.positionsStartRow))}</div>${tableHTML()}${report.images.filter(i=>i.row>report.positionsStartRow).map(imageHTML).join('')}`;
     }
-    view=M.rankingsView(report.rankings);rows=view?.rows||[];
-    if(!view)return pendingHTML('results');
-    return `<div class="results-heading"><h2>Результаты за ${M.monthLabel(state.month).toLowerCase()}</h2><p class="source-label">Топвизор · ${esc(view.after.region)} · ${esc(view.after.device)} · ${date(view.after.date)}</p>${proseHTML(report.intro)}</div>${kpisHTML()}${view.before&&!view.comparable?'<p class="metrics-note">Настройки замеров различаются. Изменения позиций не сравниваем.</p>':''}${view.before&&view.comparable?chartsHTML():''}${tableHTML()}`;
+    refreshRankingView();
+    const heading=`<div class="results-heading"><h2>Результаты за ${M.monthLabel(state.month).toLowerCase()}</h2>${view?`<p class="source-label">${esc(view.after.sourceLabel)} · ${esc(view.after.region)} · ${esc(view.after.device)}</p>${view.after.sourceLabel==='XMLStock'?'':proseHTML(report.intro)}`:''}</div>`;
+    if(!view)return heading+trafficHTML()+pendingHTML('results');
+    return `${heading}${trafficHTML()}<div class="rankings-section-heading"><h2>Позиции в поиске</h2><p>Текущий срез и сохранённая история показаны раздельно. Условия и даты каждого поисковика указаны в карточках.</p></div>${monitoringControlsHTML()}${rankingPanelsHTML()}${tableHTML()}`;
   }
   function worksHTML(){
     if(!report.works.length)return pendingHTML('works');
@@ -172,14 +256,14 @@
   }
   function render(){
     report=M.getReport(data,state.month);$('report-month').value=state.month;
-    if(renderedMonth!==state.month){$('panel-results').innerHTML=resultsHTML();$('panel-works').innerHTML=worksHTML();renderedMonth=state.month;}
+    if(renderedMonth!==state.month){$('panel-results').innerHTML=resultsHTML();$('panel-works').innerHTML=worksHTML();renderedMonth=state.month;renderTrafficChart();}
     for(const t of tabs){$('tab-'+t).setAttribute('aria-selected',String(t===state.tab));$('tab-'+t).tabIndex=t===state.tab?0:-1;$('panel-'+t).hidden=t!==state.tab;}
     $('work-count').textContent=report.works.length;$('work-count').hidden=!report.works.length;
     document.title=`Отчёт по продвижению сайта «Кожа» - ${M.monthLabel(state.month)}`;
     renderQueries();renderDetail();
   }
   function navigate(next,{replace=false,focus=false}={}){
-    if(next.month&&next.month!==state.month){state.filters={search:'',direction:'',trend:'all'};state.limit=25;}
+    if(next.month&&next.month!==state.month){state.filters={search:'',direction:'',trend:'all'};state.limit=25;state.seriesId=null;state.cohort='all';state.trafficWeek=null;}
     Object.assign(state,next);
     const url=new URL(location.href);url.searchParams.set('month',state.month);url.hash=state.tab;
     if(state.detail)url.searchParams.set('task',state.detail);else url.searchParams.delete('task');
@@ -202,15 +286,31 @@
     const work=e.target.closest('[data-task]');if(work){lastOpener=work;navigate({detail:work.dataset.task});return;}
     const month=e.target.closest('button[data-month]');if(month){navigate({month:month.dataset.month,tab:'results',detail:null});return;}
     const engine=e.target.closest('button[data-engine]');if(engine){state.engine=engine.dataset.engine;$('positions-wrap').dataset.engine=state.engine;document.querySelectorAll('button[data-engine]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.engine===state.engine)));return;}
-    if(e.target.closest('#reset-filters')){state.filters={search:'',direction:'',trend:'all'};state.limit=25;$('query-search').value='';$('direction-filter').value='';$('trend-filter').value='all';renderQueries({resetScroll:true});$('query-search').focus({preventScroll:true});return;}
+    const trafficToggle=e.target.closest('[data-traffic-series]');if(trafficToggle){const key=trafficToggle.dataset.trafficSeries;if(state.trafficVisible.has(key)){if(state.trafficVisible.size===1)return;state.trafficVisible.delete(key);}else state.trafficVisible.add(key);renderTrafficChart();return;}
+    if(e.target.closest('#reset-filters')){state.filters={search:'',direction:'',trend:'all'};state.limit=25;$('query-search').value='';$('direction-filter').value='';$('trend-filter').value='all';if(report.kind==='archive')renderQueries({resetScroll:true});else updateRankingPopulation();$('query-search').focus({preventScroll:true});return;}
     if(e.target.closest('#show-more')){state.limit+=25;renderQueries();}
   });
-  document.addEventListener('input',e=>{if(e.target.id==='query-search'){state.filters.search=e.target.value;state.limit=25;renderQueries({resetScroll:true});}});
-  document.addEventListener('change',e=>{if(e.target.id==='direction-filter')state.filters.direction=e.target.value;else if(e.target.id==='trend-filter')state.filters.trend=e.target.value;else return;state.limit=25;renderQueries({resetScroll:true});});
+  document.addEventListener('input',e=>{
+    if(e.target.id==='traffic-week'){state.trafficWeek=Number(e.target.value);renderTrafficChart();return;}
+    if(e.target.id==='query-search'){state.filters.search=e.target.value;state.limit=25;if(report.kind==='archive')renderQueries({resetScroll:true});else updateRankingPopulation();}
+  });
+  document.addEventListener('pointerover',e=>{const point=e.target.closest('[data-traffic-week]');if(point&&state.trafficWeek!==Number(point.dataset.trafficWeek)){state.trafficWeek=Number(point.dataset.trafficWeek);renderTrafficChart();}});
+  document.addEventListener('change',e=>{
+    if(e.target.id==='ranking-series'||e.target.id==='ranking-cohort'){
+      if(e.target.id==='ranking-series'){state.seriesId=e.target.value;state.cohort='all';}else state.cohort=e.target.value;
+      state.filters={search:'',direction:'',trend:'all'};state.limit=25;$('panel-results').innerHTML=resultsHTML();renderQueries();renderTrafficChart();$(e.target.id).focus({preventScroll:true});return;
+    }
+    if(e.target.id==='direction-filter')state.filters.direction=e.target.value;
+    else if(e.target.id==='trend-filter')state.filters.trend=e.target.value;
+    else return;
+    state.limit=25;if(report.kind==='archive'||e.target.id==='trend-filter')renderQueries({resetScroll:true});else updateRankingPopulation();
+  });
   $('close-detail').addEventListener('click',()=>navigate({detail:null}));
   dialog.addEventListener('cancel',e=>{e.preventDefault();navigate({detail:null});});
   dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)navigate({detail:null});}});
-  const restore=()=>{const next=M.readRoute(data,location.href);if(next.month!==state.month){state.filters={search:'',direction:'',trend:'all'};state.limit=25;}Object.assign(state,next);render();};
+  const restore=()=>{const next=M.readRoute(data,location.href);if(next.month!==state.month){state.filters={search:'',direction:'',trend:'all'};state.limit=25;state.seriesId=null;state.cohort='all';state.trafficWeek=null;}Object.assign(state,next);render();};
   window.addEventListener('popstate',restore);window.addEventListener('hashchange',restore);
+  let trafficResizeFrame;
+  window.addEventListener('resize',()=>{cancelAnimationFrame(trafficResizeFrame);trafficResizeFrame=requestAnimationFrame(renderTrafficChart);});
   navigate({}, {replace:true});
 })();

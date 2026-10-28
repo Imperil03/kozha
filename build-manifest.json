@@ -1,11 +1,11 @@
 {
   "files": {
-    "index.html": "232a0b87d570c350765fc0b56e84d77ed0ce6eaf9933d91e45f8a4eb9ccf8463",
+    "index.html": "7bbfa2fcd6ec03b58bdf6ec10618c6b8d1d31bbf3d505d113cc6cc703ccb3b50",
     "styles.css": "631f88daee0bd2bc54047003d8930cb554ab8551ec251c1a02b93bb1f3107122",
-    "results.css": "2985867da92bbcf980e61216f47dcbd6a976b6a2af73ee4e07c80beb47a360ab",
+    "results.css": "f6be7defc1bb8984f32c9bd9989f3b3424ab59359fc3dedf177dec6d3cbc2f72",
     "archive.css": "88a2c17516caaf82a97c4c58b1ad151315e3211d65e88fb2fc1f27d12a39dc1e",
-    "model.js": "a882bb74a8cf0141e0aa8d7252b9bc7aa6c5c38e4d8344c338265c0fe222f924",
-    "app.js": "53f8593165051daa07a282d1f8af2eeeff4819b1cac3a377deba0b304ceff48d",
+    "model.js": "f905284018860e0b0d647e545535ecab2371cadcaf92b57cf8f638bb76ad902d",
+    "app.js": "418a42422aefe64d1fade8b8ff45e3955a707f259558d1c0253d1c1516bee301",
     "assets/fonts/Montserrat-Regular.woff2": "133eee529400866a00fdd329c3b253d6c4a4e8c87c40ab502394e4f8cbd4789f",
     "assets/fonts/Montserrat-Medium.woff2": "535beca8eb5df516ef813a1b8b716925345dd079b7aa10bc83f8794d65e1e7f3",
     "assets/fonts/Montserrat-SemiBold.woff2": "defb5292312d3eb578c0eea6f795f3f0f79fa76d67a5c4a774c1d8e5517a49b2",
@@ -19,7 +19,7 @@
     "evidence/kozha-seo-audit-2026-10-16.xlsx": "3374109c1d2098084589d4501f86e14ae457b2f87f10662001f039854051406d",
     "evidence/kozha-mobile-performance-2026-10-16.xlsx": "e2093fd59c6db474607e3f1865af2da615412cbf114f1ce70d0032f0041b091a",
     "evidence/kozha-seo-page-priorities-2026-10-17.xlsx": "374ad6d0453d8f8772ff143b459a78e26c3a2d249184c6243e75536246745da2",
-    "report-data.js": "2d3c6e70d8fd00214a4c247dc5ff368066ea892b5e8c946ac06fef50dd6622a3",
+    "report-data.js": "396cb9a1e18849d91cc9b3ac527e3a6750c833eaab34081df3e69fa7e1a1b235",
     ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   }
 }

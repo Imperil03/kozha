@@ -76,30 +76,81 @@
     return {kind: after < before ? 'up' : 'down', amount:Math.abs(before-after)};
   }
   const measured = v => v === null || (Number.isInteger(v) && v > 0);
-  function comparableSnapshots(a,b) {
-    return !!a && !!b && a.region===b.region && a.device===b.device && a.sourceLabel===b.sourceLabel &&
-      ENGINES.every(e=>a.regionIndexes?.[e]===b.regionIndexes?.[e]) && a.date < b.date;
+  function comparableEngine(a,b,engine) {
+    if(!a||!b)return false;
+    const left=a.engines?.[engine],right=b.engines?.[engine];
+    if(left||right){
+      if(!left||!right)return false;
+      const keys=['sourceLabel','method','region','regionId','device','language','depth'];
+      return keys.every(k=>left[k]!==undefined&&left[k]!==null&&left[k]!==''&&left[k]===right[k])&&
+        Number.isFinite(Date.parse(left.observedTo))&&Number.isFinite(Date.parse(right.observedFrom))&&
+        Date.parse(left.observedTo)<Date.parse(right.observedFrom);
+    }
+    const depth=s=>typeof s.depth==='object'?s.depth?.[engine]:s.depth;
+    // Legacy snapshots keep their original unknown depth. A known/unknown or
+    // changed depth is never silently treated as the same measurement method.
+    return ['region','device','sourceLabel'].every(k=>typeof a[k]==='string'&&a[k].trim()&&a[k]===b[k])&&
+      a.regionIndexes?.[engine]!==undefined&&a.regionIndexes?.[engine]!==null&&
+      a.regionIndexes?.[engine]===b.regionIndexes?.[engine]&&depth(a)===depth(b)&&a.date<b.date;
+  }
+  function comparableSnapshots(a,b,engine) {
+    return engine?comparableEngine(a,b,engine):ENGINES.every(e=>comparableEngine(a,b,e));
+  }
+  function rankingSeriesOptions(report) {
+    return [...(report.rankingSeries||[]).map(s=>({id:s.id,label:s.label})),
+      ...(report.rankings?.after?[{id:'topvisor',label:'Топвизор — сохранённая история'}]:[])];
+  }
+  function selectRankingSeries(report,seriesId) {
+    const series=report.rankingSeries||[];
+    if(seriesId==='topvisor'&&report.rankings?.after)return {id:'topvisor',label:'Топвизор — сохранённая история',...report.rankings};
+    const selected=series.find(s=>s.id===seriesId)||series.at(-1);
+    if(selected)return selected;
+    if(report.rankings?.after)return {id:'topvisor',label:'Топвизор — сохранённая история',...report.rankings};
+    return series.at(-1)||null;
+  }
+  const rowCohorts=row=>row.cohorts||['base',...(row.direction==='Сентябрь 2026'?['september']:[])];
+  function filterRankingPopulation(rows,{cohort='all',direction='',search=''}={}) {
+    const q=search.toLocaleLowerCase('ru-RU').trim();
+    return rows.filter(r=>(cohort==='all'||rowCohorts(r).includes(cohort))&&
+      (!direction||(direction==='__unmapped'?!r.direction:r.direction===direction))&&
+      (!q||r.query.toLocaleLowerCase('ru-RU').includes(q)));
   }
   function rankingsView(rankings) {
     if (!rankings?.after) return null;
     const {before,after}=rankings;
-    const comparable=comparableSnapshots(before,after);
+    const compatibleEngines=Object.fromEntries(ENGINES.map(e=>[e,comparableEngine(before,after,e)]));
     const previous=new Map((before?.rows||[]).map(r=>[r.id,r]));
     const current=new Map(after.rows.map(r=>[r.id,r]));
+    const previousFor=row=>{const old=previous.get(row.id);return old&&normalizeQuery(old.query)===normalizeQuery(row.query)?old:null;};
     const all=[...after.rows, ...(before?.rows||[]).filter(r=>!current.has(r.id))];
-    const rows=all.map(row=>({id:row.id,query:row.query,direction:row.direction||'',...Object.fromEntries(ENGINES.map(e=>{
-      const a=previous.get(row.id)?.[e], b=current.get(row.id)?.[e];
+    const rows=all.map(row=>({id:row.id,query:row.query,direction:row.direction||'',cohorts:rowCohorts(row),urls:row.urls||{},...Object.fromEntries(ENGINES.map(e=>{
+      const a=previousFor(row)?.[e], b=current.get(row.id)?.[e];
+      const comparable=compatibleEngines[e];
       return [e,{before:a,after:b,comparable,change:change(a,b,comparable)}];
     }))}));
     const stats=Object.fromEntries(ENGINES.map(e=>{
-      const common=comparable ? rows.filter(r=>measured(r[e].before)&&measured(r[e].after)) : [];
+      const common=compatibleEngines[e] ? rows.filter(r=>measured(r[e].before)&&measured(r[e].after)) : [];
       const present=after.rows.filter(r=>measured(r[e]));
       const cohort=common.length ? common : present.map(r=>({[e]:{after:r[e]}}));
       const metric=top=>({before:common.length?common.filter(r=>typeof r[e].before==='number'&&r[e].before<=top).length:null,
         after:cohort.filter(r=>typeof r[e].after==='number'&&r[e].after<=top).length});
-      return [e,{total:cohort.length,measured:present.length,comparable:common.length>0,newCount:comparable?present.filter(r=>!measured(previous.get(r.id)?.[e])).length:0,top3:metric(3),top10:metric(10)}];
+      const countCurrent=top=>present.filter(r=>typeof r[e]==='number'&&r[e]<=top).length;
+      const movements=common.length?{
+        up:common.filter(r=>['up','appeared'].includes(r[e].change.kind)).length,
+        down:common.filter(r=>['down','lost'].includes(r[e].change.kind)).length,
+        same:common.filter(r=>r[e].change.kind==='same').length,
+      }:null;
+      return [e,{total:cohort.length,measured:present.length,hasCurrent:present.length>0,comparable:common.length>0,
+        newCount:compatibleEngines[e]?present.filter(r=>!measured(previousFor(r)?.[e])).length:0,
+        currentTotal:present.length,currentTop3:countCurrent(3),currentTop10:countCurrent(10),currentTop50:countCurrent(50),
+        movements,top3:metric(3),top10:metric(10),top50:metric(50)}];
     }));
-    return {before,after,rows,stats,comparable};
+    return {before,after,rows,stats,compatibleEngines,comparable:ENGINES.some(e=>stats[e].comparable)};
+  }
+  function scopedRankingsView(rankings,filters={}) {
+    if(!rankings?.after)return null;
+    const scope=s=>s?{...s,rows:filterRankingPopulation(s.rows,filters)}:null;
+    return rankingsView({...rankings,before:scope(rankings.before),after:scope(rankings.after)});
   }
   const normalizeQuery=query=>query.normalize('NFKC').toLocaleLowerCase('ru-RU').trim().replace(/\s+/g,' ');
   function groupIndex(groups=[]){
@@ -167,6 +218,81 @@
       row.forEach(validateCell);
     }
   }
+  const DAY=86400000;
+  function validDate(value){
+    if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
+    const time=Date.parse(value+'T00:00:00Z');
+    return Number.isFinite(time)&&new Date(time).toISOString().slice(0,10)===value;
+  }
+  function validObservation(value){
+    return typeof value==='string'&&validDate(value.slice(0,10))&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)&&Number.isFinite(Date.parse(value));
+  }
+  function ownRankingUrl(value){
+    const safe=safeHref(value);if(!safe)return false;
+    try{const u=new URL(safe);return (u.hostname==='kozhaclinic.ru'||u.hostname.endsWith('.kozhaclinic.ru'))&&
+      ![...u.searchParams.keys()].some(k=>/^(?:key|api_?key|token|access_?token|authorization|user)$/i.test(k));}catch{return false;}
+  }
+  function validateSnapshot(snap,{complete=false}={}){
+    if(!snap||!validDate(snap.date)||!Array.isArray(snap.rows)||new Set(snap.rows.map(r=>r.id)).size!==snap.rows.length)throw Error('Некорректный или повторный замер.');
+    if(complete&&!snap.rows.length)throw Error('Пустой срез позиций.');
+    const queries=new Set();
+    for(const row of snap.rows){
+      if(typeof row.id!=='string'||!row.id||typeof row.query!=='string'||!row.query.trim()||typeof row.direction!=='string')throw Error('Некорректный запрос замера.');
+      const key=normalizeQuery(row.query);if(queries.has(key))throw Error('Повторные запросы API.');queries.add(key);
+      if(row.cohorts!==undefined&&(!Array.isArray(row.cohorts)||new Set(row.cohorts).size!==row.cohorts.length||row.cohorts.some(c=>!['base','september','october'].includes(c))))throw Error('Некорректный набор запросов.');
+      for(const e of ENGINES){
+        if(row[e]!==undefined&&!measured(row[e]))throw Error('Некорректная позиция API.');
+        if(complete&&!measured(row[e]))throw Error('Неполный срез позиций.');
+        const meta=snap.engines?.[e],depth=typeof snap.depth==='object'?snap.depth?.[e]:snap.depth;
+        if(typeof row[e]==='number'&&((depth!==undefined&&row[e]>depth)||(meta&&row[e]>meta.depth)))throw Error('Позиция превышает глубину замера.');
+        if(row.urls?.[e]!==undefined&&(!ownRankingUrl(row.urls[e])||typeof row[e]!=='number'))throw Error('Некорректный URL результата.');
+        if(complete&&typeof row[e]==='number'&&!ownRankingUrl(row.urls?.[e]))throw Error('Нет URL найденной страницы.');
+      }
+    }
+    if(snap.engines!==undefined){
+      const times=[];
+      for(const e of ENGINES){
+        const m=snap.engines[e];
+        if(!m||['sourceLabel','method','region','device','language'].some(k=>typeof m[k]!=='string'||!m[k].trim())||
+          !((Number.isInteger(m.regionId)&&m.regionId>0)||(typeof m.regionId==='string'&&/^[1-9]\d*$/.test(m.regionId)))||
+          !Number.isInteger(m.depth)||m.depth<1||m.depth>100||!validObservation(m.observedFrom)||!validObservation(m.observedTo)||
+          Date.parse(m.observedFrom)>Date.parse(m.observedTo))throw Error('Некорректные условия замера.');
+        if(m.sourceLabel!==snap.sourceLabel||m.region!==snap.region||
+          (snap.regionIndexes?.[e]!==undefined&&String(snap.regionIndexes[e])!==String(m.regionId)))throw Error('Условия замера не согласованы с подписью.');
+        if(typeof snap.depth==='object'&&snap.depth[e]!==m.depth)throw Error('Глубина замера не согласована.');
+        times.push(Date.parse(m.observedFrom),Date.parse(m.observedTo));
+      }
+      if(Math.max(...times)-Math.min(...times)>DAY)throw Error('Окно сбора позиций превышает 24 часа.');
+    }else if(complete)throw Error('Нет условий замера XMLStock.');
+  }
+  function validateTraffic(traffic){
+    if(!traffic||['sourceLabel','metric','attribution'].some(k=>typeof traffic[k]!=='string'||!traffic[k].trim())||
+      !validDate(traffic.observedFrom)||!validDate(traffic.observedTo)||!Array.isArray(traffic.weeks)||!traffic.weeks.length||!Array.isArray(traffic.comparisons)||!traffic.comparisons.length)throw Error('Некорректные данные трафика.');
+    const values=v=>{
+      if(['total','google','yandex','other'].some(k=>!Number.isSafeInteger(v[k])||v[k]<0)||v.total!==v.google+v.yandex+v.other)throw Error('Не сходится состав поискового трафика.');
+    };
+    let previous=null;
+    for(const week of traffic.weeks){
+      if(!validDate(week.start)||!validDate(week.end)||Date.parse(week.end)-Date.parse(week.start)!==6*DAY||new Date(week.start+'T00:00:00Z').getUTCDay()!==1||
+        (previous&&Date.parse(week.start)-Date.parse(previous.end)!==DAY))throw Error('Неполные или повторные недели трафика.');
+      values(week);previous=week;
+    }
+    if(traffic.observedFrom!==traffic.weeks[0].start||traffic.observedTo!==traffic.weeks.at(-1).end)throw Error('Период трафика не согласован.');
+    const ids=new Set();
+    for(const comparison of traffic.comparisons){
+      if(typeof comparison.id!=='string'||!comparison.id||ids.has(comparison.id)||typeof comparison.label!=='string')throw Error('Некорректное сравнение трафика.');ids.add(comparison.id);
+      const durations=[];
+      for(const period of [comparison.before,comparison.after]){
+        if(!period||!validDate(period.start)||!validDate(period.end)||period.start>period.end)throw Error('Некорректный период сравнения трафика.');
+        values(period);
+        const weeks=traffic.weeks.filter(w=>w.start>=period.start&&w.end<=period.end),days=(Date.parse(period.end)-Date.parse(period.start))/DAY+1;
+        if(!weeks.length||days!==weeks.length*7||weeks[0].start!==period.start||weeks.at(-1).end!==period.end)throw Error('Период сравнения не покрыт полными неделями.');
+        for(const key of ['total','google','yandex','other'])if(weeks.reduce((sum,w)=>sum+w[key],0)!==period[key])throw Error('Суммы периода не совпадают с недельными данными.');
+        durations.push(days);
+      }
+      if(durations[0]!==durations[1]||Date.parse(comparison.after.start)-Date.parse(comparison.before.end)!==DAY)throw Error('Несопоставимые периоды трафика.');
+    }
+  }
   function validateData(data) {
     if(data?.project?.id!=='kozha'||data.project.website!=='https://kozhaclinic.ru/') throw Error('Чужой проект.');
     if(!Array.isArray(data.reports)||!data.reports.length) throw Error('Нет отчётов.');
@@ -207,15 +333,21 @@
       } else if(report.kind==='current') {
         if(report.rankings?.after) {
           if(!report.rankings.after.date.startsWith(report.month+'-')) throw Error('Замер относится к другому месяцу.');
-          for(const snap of [report.rankings.before,report.rankings.after].filter(Boolean)) {
-            if(!Array.isArray(snap.rows)||new Set(snap.rows.map(r=>r.id)).size!==snap.rows.length) throw Error('Повторные запросы API.');
-            for(const row of snap.rows) for(const e of ENGINES) if(row[e]!==undefined&&!measured(row[e])) throw Error('Некорректная позиция API.');
+          for(const snap of [report.rankings.before,report.rankings.after].filter(Boolean))validateSnapshot(snap);
+        }
+        if(report.rankingSeries!==undefined){
+          if(!Array.isArray(report.rankingSeries))throw Error('Некорректные серии позиций.');
+          const seriesIds=new Set();
+          for(const series of report.rankingSeries){
+            if(!series||typeof series.id!=='string'||!series.id||series.id==='topvisor'||seriesIds.has(series.id)||typeof series.label!=='string'||!series.label.trim()||!series.after)throw Error('Некорректная серия позиций.');seriesIds.add(series.id);
+            for(const snap of [series.before,series.after].filter(Boolean))validateSnapshot(snap,{complete:true});
           }
         }
+        if(report.traffic!==undefined)validateTraffic(report.traffic);
       } else throw Error('Неизвестный вид отчёта.');
     }
     if(!months.has(data.project.defaultMonth)) throw Error('Нет текущего месяца.');
     return true;
   }
-  return {ENGINES,validMonth,monthLabel,safeHref,getReport,defaultMonth,readRoute,workDetailsEnabled,sliceCell,proseBlocks,change,rankingsView,archiveRows,filterRows,validateData,comparableSnapshots,rankBand,groupIndex};
+  return {ENGINES,validMonth,monthLabel,safeHref,getReport,defaultMonth,readRoute,workDetailsEnabled,sliceCell,proseBlocks,change,rankingsView,scopedRankingsView,selectRankingSeries,rankingSeriesOptions,filterRankingPopulation,archiveRows,filterRows,validateData,comparableSnapshots,comparableEngine,rankBand,groupIndex,validateSnapshot,validateTraffic,ownRankingUrl};
 });

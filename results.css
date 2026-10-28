@@ -46,6 +46,110 @@
 .initial-positions th,.initial-positions td{overflow-wrap:anywhere}
 .initial-positions .competitor-rank{color:var(--muted)}
 .rank-label-short{display:none}
+
+/* Current monitoring keeps the approved report palette and reading scale. */
+.rankings-section-heading,.traffic-section-heading{margin:0 0 24px}
+.rankings-section-heading h2,.traffic-section-heading h2{font-size:30px;line-height:1.4}
+.rankings-section-heading p,.traffic-section-heading p{font-size:16px;line-height:1.8;color:var(--muted);margin-top:12px;max-width:82ch}
+.monitoring-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;padding:28px 32px;margin-bottom:28px}
+.monitoring-controls .filter-field{min-width:0;width:100%}
+.monitoring-controls select{width:100%;min-width:0}
+.engine-measurement{font-size:14px;line-height:1.7;color:var(--muted);margin:-14px 0 26px;overflow-wrap:anywhere}
+.engine-kpi-metrics.has-top50{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.has-top50 .engine-kpi-metric+.engine-kpi-metric{padding-left:20px}
+.engine-kpi-metrics.has-top50 .kpi-values .number{font-size:40px}
+.engine-kpi-metrics.has-top50 .kpi-values .number.before{font-size:24px}
+.engine-kpi-metrics.has-top50 .kpi-count{font-size:14px;line-height:1.6}
+.ranking-population-note{font-size:15px;line-height:1.8;color:var(--muted);max-width:90ch;margin-top:16px}
+.baseline-note{padding:20px 24px;background:var(--accent-soft);border-radius:10px;line-height:1.8}
+.rank-result-link{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:40px;max-width:100%;text-decoration:none}
+.rank-result-link:hover{text-decoration:underline}
+.rank-result-link svg{width:13px;height:13px}
+.organic-traffic{margin-bottom:48px}
+.traffic-comparisons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;margin-bottom:28px}
+.traffic-period-card{padding:28px 30px;min-width:0}
+.traffic-period-card h3,.traffic-trend-card h3{font-size:23px;line-height:1.45;margin-bottom:16px}
+.traffic-periods{font-size:14px;line-height:1.8;color:var(--muted);margin-bottom:22px}
+.traffic-periods span{display:block}
+.traffic-periods b{font-weight:500;color:var(--ink)}
+.traffic-comparison-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:15px;line-height:1.6}
+.traffic-comparison-table th,.traffic-comparison-table td{padding:13px 7px;border-bottom:1px solid var(--line);vertical-align:middle;overflow-wrap:anywhere}
+.traffic-comparison-table thead th{font-weight:500;color:var(--muted);font-size:13px;text-align:right}
+.traffic-comparison-table thead th:first-child,.traffic-comparison-table tbody th{text-align:left}
+.traffic-comparison-table thead th:first-child{width:40%}
+.traffic-comparison-table thead th:nth-child(2),.traffic-comparison-table thead th:nth-child(3){width:16%}
+.traffic-comparison-table tbody th{font-weight:400}
+.traffic-comparison-table td{text-align:right;font-variant-numeric:tabular-nums}
+.traffic-comparison-table .traffic-total{background:var(--accent-soft)}
+.traffic-comparison-table .traffic-total th,.traffic-comparison-table .traffic-total td{font-weight:600}
+.traffic-delta{display:block;font-weight:500}
+.traffic-delta small{display:block;font-size:13px;font-weight:400;white-space:nowrap}
+.traffic-delta.positive{color:var(--positive)}
+.traffic-delta.negative{color:var(--negative)}
+.traffic-trend-card{padding:32px;min-width:0}
+.traffic-chart-caption{font-size:15px;color:var(--muted);margin-top:-6px;margin-bottom:22px}
+.traffic-series-controls{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+.traffic-series-controls button{display:inline-flex;align-items:center;gap:9px;min-height:44px;padding:9px 13px;border:1px solid var(--line);background:white;border-radius:8px;font-size:14px;line-height:1.5;transition:background .15s,border-color .15s}
+.traffic-series-controls button[aria-pressed=true]{background:#f5f7fb;border-color:var(--series-color)}
+.traffic-series-controls button[aria-pressed=false]{color:var(--muted)}
+.traffic-series-controls button i{width:18px;height:3px;background:var(--series-color);border-radius:2px}
+.traffic-series-controls button[aria-pressed=false] i{background:#cbd2df}
+.organic-week-chart{display:block;width:100%;height:auto;min-height:180px;overflow:visible}
+.organic-week-chart .traffic-grid line{stroke:var(--line);stroke-width:1}
+.organic-week-chart .traffic-grid text,.organic-week-chart .traffic-axis-date{font-size:14px;fill:var(--muted);stroke:none;font-family:inherit}
+.organic-week-chart .traffic-line{fill:none;stroke-width:2.7;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.organic-week-chart .traffic-selected-week{stroke:#a8aec0;stroke-width:1;stroke-dasharray:4 4}
+.traffic-week-hit{fill:transparent;stroke:none;cursor:crosshair}
+.traffic-week-label{display:block;font-size:14px;color:var(--muted);margin:18px 0 10px}
+.traffic-week-range{display:block;width:100%;min-height:34px;accent-color:var(--accent);cursor:pointer}
+.traffic-week-readout{margin:20px 0;padding:20px 22px;background:var(--page);border-radius:10px}
+.traffic-week-readout>p{font-size:15px;font-weight:500;margin-bottom:15px}
+.traffic-week-readout dl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin:0}
+.traffic-week-readout dl>div{min-width:0}
+.traffic-week-readout dt{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);line-height:1.6}
+.traffic-week-readout dt i{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+.traffic-week-readout dd{font-size:25px;font-weight:500;margin:4px 0 0;font-variant-numeric:tabular-nums}
+.traffic-source-table summary{font-size:15px;color:var(--accent);padding:14px 0;cursor:pointer}
+.traffic-data-scroll{max-width:100%;overflow:auto;margin-top:10px}
+.traffic-data-scroll table{width:100%;min-width:620px;border-collapse:collapse;font-size:14px;line-height:1.7}
+.traffic-data-scroll th,.traffic-data-scroll td{padding:12px;border-bottom:1px solid var(--line);text-align:right}
+.traffic-data-scroll th:first-child{text-align:left;font-weight:400}
+.traffic-data-scroll thead th{font-weight:500;background:var(--page)}
+.traffic-source-note{font-size:14px;line-height:1.8;color:var(--muted);margin-top:20px;max-width:105ch}
+.traffic-comparison-table td{white-space:nowrap;word-break:normal;overflow-wrap:normal}
+.traffic-comparison-table th{word-break:normal;overflow-wrap:normal}
+.traffic-comparison-table thead th{white-space:nowrap}
+@media(max-width:1100px){.traffic-comparisons{grid-template-columns:1fr}.traffic-period-card{padding:28px 32px}.traffic-comparison-table{font-size:16px}.engine-kpi-metrics.has-top50 .kpi-values .number{font-size:34px}}
+@media(max-width:760px){.traffic-week-readout dl{grid-template-columns:repeat(2,minmax(0,1fr))}.engine-kpi-metrics.has-top50 .kpi-values .number{font-size:40px}}
+@media(max-width:600px){
+  .rankings-section-heading h2,.traffic-section-heading h2{font-size:26px}
+  .monitoring-controls{grid-template-columns:1fr;padding:24px;gap:22px}
+  .traffic-comparisons{gap:22px;margin-bottom:22px}
+  .traffic-period-card,.traffic-trend-card{padding:26px 20px}
+  .traffic-period-card h3,.traffic-trend-card h3{font-size:21px}
+  .traffic-periods{font-size:13px}
+  .traffic-comparison-table{font-size:14px;table-layout:auto}
+  .traffic-comparison-table th,.traffic-comparison-table td{padding:12px 4px}
+  .traffic-comparison-table thead th{font-size:12px}
+  .traffic-comparison-table thead th:first-child{width:36%}
+  .traffic-delta small{font-size:12px}
+  .traffic-series-controls{gap:8px}
+  .traffic-series-controls button{font-size:13px;min-height:44px;padding:8px 10px}
+  .organic-week-chart{min-height:160px}
+  .organic-week-chart .traffic-grid text,.organic-week-chart .traffic-axis-date{font-size:21px}
+  .traffic-chart-caption,.traffic-week-label,.traffic-source-note{font-size:14px}
+  .traffic-week-readout{padding:18px}
+  .traffic-week-readout dl{gap:20px 16px}
+  .traffic-week-readout>p{font-size:14px}
+  .traffic-week-readout dd{font-size:24px}
+  .engine-kpi-metrics.has-top50{gap:12px}
+  .has-top50 .engine-kpi-metric+.engine-kpi-metric{padding-left:12px}
+  .engine-kpi-metrics.has-top50 .kpi-values .number{font-size:32px}
+  .has-top50 .engine-kpi-metric h4{font-size:16px}
+  .engine-kpi-metrics.has-top50 .kpi-count{font-size:12px}
+  .engine-measurement{font-size:13px}
+}
+@media(max-width:360px){.traffic-period-card,.traffic-trend-card{padding-left:16px;padding-right:16px}.engine-kpi-metrics.has-top50 .kpi-values .number{font-size:28px}.traffic-comparison-table{font-size:13px}.traffic-delta small{font-size:11px}.traffic-comparison-table thead th{font-size:11px}}
 @media(max-width:900px){.engine-kpi-grid{gap:24px}.engine-kpi-card{padding:28px}.engine-kpi-metrics{gap:20px}.engine-kpi-metric+.engine-kpi-metric{padding-left:20px}.competitors-card{padding:28px}.competitors-table thead th:first-child{width:34%}.competitors-table th,.competitors-table td{padding:18px 10px}.comparison-value{font-size:24px}}
 @media(max-width:760px){.engine-kpi-grid{grid-template-columns:1fr}}
 @media(max-width:600px){
