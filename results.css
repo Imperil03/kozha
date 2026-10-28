@@ -188,57 +188,76 @@
   .rank-label-short{display:inline}
 }
 
-/* Three dates share the same compact layout in current results. */
-.monitoring-controls.client-monitoring-controls{display:block;width:min(100%,460px);padding:22px 26px}
-.client-kpi-grid .engine-kpi-card .searcher-name{margin-bottom:18px}
-.client-kpi-table{width:100%;border-collapse:collapse;table-layout:fixed;font-variant-numeric:tabular-nums}
-.client-kpi-table th,.client-kpi-table td{text-align:center;padding:14px 7px;border-bottom:1px solid var(--line)}
-.client-kpi-table thead th{font-weight:400;color:var(--muted);font-size:13px}
-.client-kpi-table th:first-child{width:24%;text-align:left}
-.client-kpi-table tbody th{font-weight:500;font-size:17px;white-space:nowrap}
-.client-kpi-table td{font-size:32px;line-height:1.35;font-weight:400;color:var(--ink)}
-.client-kpi-table .current{background:var(--rank-current-bg,#eaf4f2);font-weight:600}
-.client-kpi-table .rank-date{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:13px;line-height:1.3;white-space:nowrap}
-.client-kpi-table .rank-date small{font-size:11px}
-.client-kpi-grid .kpi-count{font-size:14px;margin-top:18px}
-.client-timeline-charts .rank-bar-group{gap:10px}
-.client-timeline-charts .rank-bar{width:38px}
-.client-timeline-charts .timeline-0{background:#c9c5e8}
-.client-timeline-charts .timeline-1{background:#9690ce}
-.client-timeline-charts .timeline-2{background:var(--after)}
-.client-timeline-charts .chart-legend{gap:12px 20px;font-size:13px}
-.queries-card .table-filters.client-table-filters{grid-template-columns:1.2fr 1fr}
+/* Current results reuse the approved comparison cards and block order. */
+.client-comparison-charts .rank-bars{gap:32px}
+.queries-card .table-filters.client-table-filters{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:20px}
+.queries-card .table-filters.client-table-filters .filter-field{min-width:0;width:100%;flex-basis:auto}
 .queries-card .positions-table.client-timeline-positions{min-width:0;width:100%;table-layout:fixed}
 .queries-card .positions-table.client-timeline-positions .query-col{width:32%}
 .queries-card .positions-table.client-timeline-positions .rank-col{width:auto}
 .queries-card .positions-table.client-timeline-positions .rank-value{white-space:nowrap}
+.client-traffic-section{padding:32px;margin-top:32px;margin-bottom:32px;min-width:0}
+.client-traffic-section>.section-heading{align-items:flex-start;flex-wrap:wrap;margin-bottom:12px}
+.client-traffic-section .traffic-period{color:var(--muted);font-size:14px;line-height:1.6}
+.traffic-period-controls{display:flex;gap:8px;flex-wrap:wrap}
+.traffic-period-controls button{min-height:40px;padding:8px 14px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--muted);background:white}
+.traffic-period-controls button[aria-pressed=true]{color:var(--accent);border-color:#c7c2ee;background:var(--accent-soft)}
+.client-traffic-section .traffic-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin:24px 0}
+.client-traffic-section .traffic-metric{min-width:0;padding:0 24px;border-left:1px solid var(--line)}
+.client-traffic-section .traffic-metric:first-child{padding-left:0;border-left:0}
+.client-traffic-section .traffic-metric h3{font-size:14px;font-weight:500;margin-bottom:12px;line-height:1.6}
+.client-traffic-section .traffic-metric .traffic-value{font-size:34px;line-height:1.3;margin:0 0 10px;font-weight:600;white-space:nowrap}
+.client-traffic-section .traffic-metric .traffic-value span{display:block;font-size:12px;color:var(--muted);font-weight:400;margin:3px 0 0}
+.client-traffic-section .traffic-change{font-size:17px;font-weight:600;line-height:1.5}
+.client-traffic-section .traffic-change span{font-size:12px;font-weight:400;color:var(--muted);display:block;margin-top:4px}
+.client-traffic-section .traffic-history{border-top:1px solid var(--line);padding-top:24px;margin-top:24px;min-width:0;max-width:100%}
+.client-traffic-section .traffic-history h3{font-size:18px;font-weight:600;margin-bottom:8px}
+.client-traffic-section .traffic-chart-caption{font-size:14px;margin-top:0;margin-bottom:14px}
+.client-traffic-section .traffic-series-controls{margin-bottom:12px;gap:12px 24px}
+.client-traffic-section .traffic-series-controls button{border:0;background:transparent;padding:4px 0;min-height:40px;font-size:12px}
+.client-traffic-section .traffic-week-readout dl{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:1023px){
   .queries-card .positions-table.client-timeline-positions .query-col{width:44%}
 }
+@media(max-width:760px){
+  .queries-card .table-filters.client-table-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .queries-card .table-filters.client-table-filters .search{grid-column:1/-1}
+}
 @media(max-width:600px){
-  .monitoring-controls.client-monitoring-controls{width:100%;padding:22px 24px}
-  .client-kpi-table th,.client-kpi-table td{padding:12px 5px}
-  .client-kpi-table tbody th{font-size:14px}
-  .client-kpi-table td{font-size:28px}
-  .client-kpi-table .rank-date{font-size:12px}
-  .client-kpi-table .rank-date small{font-size:10px}
-  .client-timeline-charts .rank-bar-group{gap:8px}
-  .client-timeline-charts .rank-bar{width:30px}
-  .client-timeline-charts .rank-bar span{font-size:13px}
-  .client-timeline-charts .chart-legend{font-size:12px;gap:10px 16px}
+  .client-comparison-charts .rank-bars{gap:24px}
+  .client-comparison-charts .rank-bar-group{gap:10px}
+  .client-comparison-charts .rank-bar{width:34px}
+  .client-comparison-charts .rank-bar span{font-size:13px}
+  .client-comparison-charts .chart-legend{font-size:12px;gap:10px 16px}
   .queries-card .table-filters.client-table-filters{grid-template-columns:1fr}
   .queries-card .positions-table.client-timeline-positions .query-col{width:44%}
   .queries-card .positions-table.client-timeline-positions .period-heading{padding-left:2px;padding-right:2px}
   .queries-card .positions-table.client-timeline-positions .rank-result-link{gap:2px}
   .queries-card .positions-table.client-timeline-positions .rank-result-link svg{width:10px;height:10px}
+  .client-traffic-section{padding:22px 18px;margin-top:24px}
+  .client-traffic-section .traffic-kpis{gap:14px;margin:22px 0}
+  .client-traffic-section .traffic-metric{padding:0 0 0 14px}
+  .client-traffic-section .traffic-metric h3{font-size:12px;margin-bottom:10px;min-height:3.2em}
+  .client-traffic-section .traffic-metric .traffic-value{font-size:26px}
+  .client-traffic-section .traffic-change{font-size:15px}
+  .client-traffic-section .traffic-period,.client-traffic-section .traffic-chart-caption{font-size:12px}
+  .client-traffic-section .traffic-history h3{font-size:16px}
+  .client-traffic-section .traffic-series-controls{gap:8px 16px}
+  .client-traffic-section .traffic-week-readout{padding:16px 12px}
+  .client-traffic-section .traffic-week-readout dl{gap:12px}
+  .client-traffic-section .traffic-week-readout dt{font-size:11px}
+  .client-traffic-section .traffic-week-readout dd{font-size:22px}
+}
+@media(max-width:380px){
+  .client-traffic-section .traffic-kpis{gap:8px}
+  .client-traffic-section .traffic-metric{padding-left:8px}
+  .client-traffic-section .traffic-metric:first-child{padding-left:0}
+  .client-traffic-section .traffic-metric .traffic-value{font-size:22px}
+  .client-traffic-section .traffic-metric h3{font-size:11px}
 }
 @media(max-width:360px){
-  .client-kpi-table th,.client-kpi-table td{padding-left:3px;padding-right:3px}
-  .client-kpi-table tbody th{font-size:13px}
-  .client-kpi-table td{font-size:25px}
-  .client-kpi-table .rank-date{font-size:11px}
-  .client-timeline-charts .rank-bars{gap:18px}
-  .client-timeline-charts .rank-bar-group{gap:5px}
-  .client-timeline-charts .rank-bar{width:27px}
+  .client-comparison-charts .rank-bars{gap:18px}
+  .client-comparison-charts .rank-bar-group{gap:8px}
+  .client-comparison-charts .rank-bar{width:27px}
   .queries-card .positions-table.client-timeline-positions .query-col{width:43%}
 }
