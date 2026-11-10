@@ -1,6 +1,6 @@
 {
   "files": {
-    "index.html": "c1942acb8832611d77eaceb8523637023510b4f9c186638e77b32f11a176f0b4",
+    "index.html": "cc662104644fca3fdfe190e43ad4c4a105d24fe772e418db77a8ca603831680a",
     "styles.css": "631f88daee0bd2bc54047003d8930cb554ab8551ec251c1a02b93bb1f3107122",
     "results.css": "24ecd3e6007ab612d8f63e3c11128dc5bb6d2a413a9fb6326aa6d050b72a47cd",
     "archive.css": "88a2c17516caaf82a97c4c58b1ad151315e3211d65e88fb2fc1f27d12a39dc1e",
@@ -19,7 +19,7 @@
     "evidence/kozha-seo-audit-2026-10-16.xlsx": "3374109c1d2098084589d4501f86e14ae457b2f87f10662001f039854051406d",
     "evidence/kozha-mobile-performance-2026-10-16.xlsx": "e2093fd59c6db474607e3f1865af2da615412cbf114f1ce70d0032f0041b091a",
     "evidence/kozha-seo-page-priorities-2026-10-17.xlsx": "374ad6d0453d8f8772ff143b459a78e26c3a2d249184c6243e75536246745da2",
-    "report-data.js": "36b70708c11ee339ff21a611bd92a9e9877d996ec6c496fa212bcf463cddcbc8",
+    "report-data.js": "7bcbcb37d801c986b1865eb2c922c48f2feaecd558700aa71e3a37caa5b321a8",
     ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   }
 }
