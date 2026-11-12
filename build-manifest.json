@@ -1,6 +1,6 @@
 {
   "files": {
-    "index.html": "f66b4139b2fd334130e13f4353bf72e57348b2d0ea890f122d5a46f736e3b482",
+    "index.html": "34e172d9cd6b2c06458257c4a426956c056c6e363050365cceaa321e96dbdc7e",
     "styles.css": "631f88daee0bd2bc54047003d8930cb554ab8551ec251c1a02b93bb1f3107122",
     "results.css": "24ecd3e6007ab612d8f63e3c11128dc5bb6d2a413a9fb6326aa6d050b72a47cd",
     "archive.css": "88a2c17516caaf82a97c4c58b1ad151315e3211d65e88fb2fc1f27d12a39dc1e",
@@ -19,10 +19,12 @@
     "evidence/menu-navigation-2026-11.png": "deaff7c646ac1387086c7edaf9754676e0d456de7f26ff7ec44b1d79562e5533",
     "evidence/catalog-problems-2026-11.png": "e83a91bfafce4a9c22195d04e294cfa5b9abbc2baf18cbb6dc316961c11ccb45",
     "evidence/home-hero-preview-2026-11.png": "660a38b2f024b68f60c0c3111c4168f55592f8ec5e1b9eeed03604f3847f2475",
+    "evidence/about-page-2026-11.png": "9db794293e14c594652b307d51693ddb736f88e007601e131edcaf562dbc1b2d",
+    "evidence/about-directions-2026-11.png": "0d55b1a8e37f1767051a24f6e0859e3853f6ac3649cb20f630a03585618667bd",
     "evidence/kozha-seo-audit-2026-10-16.xlsx": "3374109c1d2098084589d4501f86e14ae457b2f87f10662001f039854051406d",
     "evidence/kozha-mobile-performance-2026-10-16.xlsx": "e2093fd59c6db474607e3f1865af2da615412cbf114f1ce70d0032f0041b091a",
     "evidence/kozha-seo-page-priorities-2026-10-17.xlsx": "374ad6d0453d8f8772ff143b459a78e26c3a2d249184c6243e75536246745da2",
-    "report-data.js": "e944c84316d64f88fb95174e2d698de636af28a2af7383ce8118c966454788db",
+    "report-data.js": "e19778f80439ae9e91ab5dead1cdfb7b6f6ff6f19093b86a3cb908848345d54c",
     ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   }
 }
